@@ -3,7 +3,7 @@
     "projectname": "TT",
     "unity": {
         "build": {
-            "webgl": "",
+            "webgl": "E:\\TT\\output\\webgl_package-20260703_180448.zip",
             "native": {
                 "il2cpp": "",
                 "apk": "",
@@ -13,9 +13,9 @@
         },
         "publishType": "AndroidNativeOnly",
         "starkSdkVersion": "Without StarkSDK",
-        "unityToolsVersion": "",
+        "unityToolsVersion": null,
         "unityEngineVersion": "2022.3.62f3c1",
-        "arch": ""
+        "arch": "both"
     },
     "setting": {
         "urlCheck": false

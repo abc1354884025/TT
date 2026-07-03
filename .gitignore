@@ -18,6 +18,9 @@
 *.suo
 *.userprefs
 
+# HybridCLR 本地生成数据（不推）
+HybridCLRData/
+
 # OS
 .DS_Store
 Thumbs.db
