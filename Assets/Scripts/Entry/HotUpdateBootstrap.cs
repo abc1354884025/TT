@@ -1,0 +1,198 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine;
+
+/// <summary>
+/// HybridCLR 热更启动器。挂载在启动场景的 GameObject 上。
+///
+/// 流程：
+///   1. 从 CDN 下载热更 DLL 字节码
+///   2. Assembly.Load 加载 DLL → 注入 UIManager
+///   3. 从 CDN 下载 UI AssetBundle
+///   4. 切换 UIManager 到 AssetBundleProvider
+///   5. 打开首个面板（从热更 DLL 中的类型）
+///
+/// 兼容非热更模式：CDN 不可用时 fallback 到本地 Resources。
+/// </summary>
+public class HotUpdateBootstrap : MonoBehaviour
+{
+    [Header("CDN 配置")]
+    [Tooltip("CDN 基础 URL")]
+    [SerializeField] private string _cdnBaseUrl = "http://your-cdn.com/game/";
+
+    [Tooltip("热更 DLL 文件名列表（不含路径），如 HotUpdate.dll")]
+    [SerializeField] private string[] _hotUpdateDlls = new[] { "HotUpdate.dll" };
+
+    [Tooltip("UI AB 包列表（不含 URL 前缀），如 ui_panels")]
+    [SerializeField] private string[] _uiBundles = new[] { "ui_panels" };
+
+    [Tooltip("版本号，用于 CDN 缓存更新")]
+    [SerializeField] private string _version = "1.0.0";
+
+    [Header("启动设置")]
+    [Tooltip("热更完成后自动打开的面板")]
+    [SerializeField] private string _startPanel;
+
+    [Tooltip("CDN 下载失败时是否退回本地 Resources 模式")]
+    [SerializeField] private bool _fallbackToResources = true;
+
+    [Tooltip("超时秒数（0 = 不限）")]
+    [SerializeField] private float _timeoutSeconds = 30f;
+
+    #region 启动
+
+    private void Start()
+    {
+        StartCoroutine(Bootstrap());
+    }
+
+    private IEnumerator Bootstrap()
+    {
+        Debug.Log($"[HotUpdate] ===== 开始热更流程 v{_version} =====");
+        var startTime = Time.realtimeSinceStartup;
+
+        // --- 阶段 1: 初始化 AOT 框架 ---
+        Debug.Log("[HotUpdate] 阶段 1/4: 初始化 AOT 框架...");
+        var ui = UIManager.Instance;
+        yield return null; // 等一帧确保 Canvas 创建
+
+        // --- 阶段 2: 下载并加载热更 DLL ---
+        Debug.Log("[HotUpdate] 阶段 2/4: 下载热更 DLL...");
+        Assembly hotUpdateAss = null;
+
+        foreach (var dllName in _hotUpdateDlls)
+        {
+            var url = $"{_cdnBaseUrl}{_version}/{dllName}";
+            byte[] dllBytes = null;
+            yield return DownloadBytes(url, bytes => dllBytes = bytes);
+
+            if (dllBytes != null && dllBytes.Length > 0)
+            {
+                try
+                {
+                    // HybridCLR: 加载热更 DLL
+                    // 如果用 HybridCLR 的 RuntimeApi，替换下面这行：
+                    // hotUpdateAss = RuntimeApi.LoadAssembly(dllBytes);
+                    hotUpdateAss = Assembly.Load(dllBytes);
+                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[HotUpdate] DLL 加载失败: {dllName}, {e.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[HotUpdate] DLL 下载失败: {url}");
+            }
+        }
+
+        if (hotUpdateAss != null)
+        {
+            ui.SetHotUpdateAssembly(hotUpdateAss);
+        }
+        else if (!_fallbackToResources)
+        {
+            Debug.LogError("[HotUpdate] 热更 DLL 全部加载失败且不允许退回！");
+            yield break;
+        }
+        else
+        {
+            Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
+        }
+
+        // --- 阶段 3: 下载 UI AssetBundle ---
+        Debug.Log("[HotUpdate] 阶段 3/4: 下载 UI AssetBundle...");
+        var abProvider = new AssetBundleProvider(this);
+
+        foreach (var bundleName in _uiBundles)
+        {
+            var url = $"{_cdnBaseUrl}{_version}/{bundleName}";
+            bool done = false; bool success = false;
+            abProvider.DownloadBundle(bundleName, url, ok => { done = true; success = ok; });
+
+            float waitStart = Time.realtimeSinceStartup;
+            yield return new WaitUntil(() => done || (_timeoutSeconds > 0 && Time.realtimeSinceStartup - waitStart > _timeoutSeconds));
+
+            if (!done)
+            {
+                Debug.LogWarning($"[HotUpdate] AB 下载超时: {bundleName}");
+                break;
+            }
+            if (!success)
+            {
+                Debug.LogWarning($"[HotUpdate] AB 下载失败: {bundleName}");
+                break;
+            }
+        }
+
+        // 注册路径映射（示例：面板 "ShopPanel" 在 ui_panels 包中名为 "ShopPanel"）
+        // 实际项目可用配置文件或按约定映射
+        abProvider.RegisterPath("UI/Panels/ShopPanel", "ui_panels", "ShopPanel");
+        abProvider.RegisterPath("UI/Panels/TestPanel", "ui_panels", "TestPanel");
+
+        // 如果 AB 加载成功，切换到 AB Provider
+        if (abProvider.IsBundleReady(_uiBundles.Length > 0 ? _uiBundles[0] : ""))
+        {
+            ui.SetResourceProvider(abProvider);
+            Debug.Log("[HotUpdate] 已切换到 AssetBundleProvider");
+        }
+
+        // --- 阶段 4: 打开首个面板 ---
+        Debug.Log("[HotUpdate] 阶段 4/4: 打开初始面板...");
+        if (!string.IsNullOrEmpty(_startPanel))
+        {
+            // 从热更 Assembly 查找类型并打开
+            ui.Open(_startPanel, new StartPanelData
+            {
+                Version = _version,
+                IsHotUpdated = hotUpdateAss != null
+            });
+        }
+
+        var elapsed = Time.realtimeSinceStartup - startTime;
+        Debug.Log($"[HotUpdate] ===== 启动完成，耗时 {elapsed:F1}s =====");
+    }
+
+    #endregion
+
+    #region 辅助
+
+    /// <summary>下载字节数据</summary>
+    private IEnumerator DownloadBytes(string url, Action<byte[]> onComplete)
+    {
+        using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
+        req.timeout = Mathf.CeilToInt(_timeoutSeconds > 0 ? _timeoutSeconds : 30);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            onComplete?.Invoke(req.downloadHandler.data);
+        }
+        else
+        {
+            Debug.LogWarning($"[HotUpdate] 下载失败: {url}, {req.error}");
+            onComplete?.Invoke(null);
+        }
+    }
+
+    /// <summary>同步初始化（不使用协程，适合简单场景）</summary>
+    public void InitSync()
+    {
+        var ui = UIManager.Instance;
+        if (!string.IsNullOrEmpty(_startPanel))
+            ui.Open(_startPanel);
+    }
+
+    #endregion
+}
+
+/// <summary>传给首个面板的启动数据</summary>
+public class StartPanelData
+{
+    public string Version;
+    public bool IsHotUpdated;
+}
