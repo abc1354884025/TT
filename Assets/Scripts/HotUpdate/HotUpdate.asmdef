@@ -2,7 +2,8 @@
     "name": "HotUpdate",
     "rootNamespace": "HotUpdate",
     "references": [
-        "Assembly-CSharp"
+        "UIFramework",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

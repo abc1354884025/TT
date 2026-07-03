@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
 /// <summary>
 /// 基于 AssetBundle 的资源加载器。从 CDN 下载 AB 包后加载 Prefab，支持热更。

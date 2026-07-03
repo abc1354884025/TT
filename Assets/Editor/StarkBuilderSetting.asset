@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tag: 0
   wasmResourceUrl: http://
-  OutputDir: E:\TT\TT\tt-minigame
+  OutputDir: E:\TT\output
   useByteAudioAPI: 0
   wasmMemorySize: 128
-  isWebGL2: 0
+  isWebGL2: 1
   needCompress: 1
   symbolMode: 1
   profiling: 0
@@ -51,7 +51,7 @@ MonoBehaviour:
   NativeWhiteListRegex:
   - com.bytedance.starksdk
   - _Backup~
-  _appId: 
+  _appId: tt7ced0a50e288d9cd07
   version: 
   autoVersion: 0
   _webglPackagePath: 
@@ -60,6 +60,6 @@ MonoBehaviour:
   _menuButtonStyle: 0
   _publishType: 0
   publishDesc: 
-  idePath: 
+  idePath: "H:/douyin_studio/@bytedminiprogram-ide/\u6296\u97F3\u5F00\u53D1\u8005\u5DE5\u5177.exe"
   isConvert: 0
   isOldBuildFormat: 1

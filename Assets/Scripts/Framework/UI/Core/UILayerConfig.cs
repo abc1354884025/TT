@@ -30,11 +30,11 @@ public class UILayerConfig : ScriptableObject
     {
         _layers = new LayerEntry[]
         {
-            new() { Layer = UILayer.Background, SortingOrder = 0,   BlockRaycasts = true },
-            new() { Layer = UILayer.Normal,     SortingOrder = 100, BlockRaycasts = true },
-            new() { Layer = UILayer.Popup,      SortingOrder = 200, BlockRaycasts = true },
-            new() { Layer = UILayer.Top,        SortingOrder = 300, BlockRaycasts = true },
-            new() { Layer = UILayer.System,     SortingOrder = 400, BlockRaycasts = true },
+            new LayerEntry { Layer = UILayer.Background, SortingOrder = 0,   BlockRaycasts = true },
+            new LayerEntry { Layer = UILayer.Normal,     SortingOrder = 100, BlockRaycasts = true },
+            new LayerEntry { Layer = UILayer.Popup,      SortingOrder = 200, BlockRaycasts = true },
+            new LayerEntry { Layer = UILayer.Top,        SortingOrder = 300, BlockRaycasts = true },
+            new LayerEntry { Layer = UILayer.System,     SortingOrder = 400, BlockRaycasts = true },
         };
     }
 }

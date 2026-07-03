@@ -17,7 +17,7 @@ public class ResourcesProvider : IResourceProvider
     public T Load<T>(string path) where T : UnityEngine.Object
     {
         var asset = Resources.Load<T>(path);
-        if (asset != null) AddRef(path);
+        if (asset != null) AddRef(path, asset);
         else Debug.LogError($"[ResourcesProvider] 加载失败: {path}");
         return asset;
     }
@@ -32,7 +32,7 @@ public class ResourcesProvider : IResourceProvider
         var req = Resources.LoadAsync<T>(path);
         yield return req;
         var asset = req.asset as T;
-        if (asset != null) AddRef(path);
+        if (asset != null) AddRef(path, asset);
         else Debug.LogError($"[ResourcesProvider] 异步加载失败: {path}");
         onLoaded?.Invoke(asset);
     }
@@ -48,7 +48,7 @@ public class ResourcesProvider : IResourceProvider
         yield return req;
         var prefab = req.asset as GameObject;
         if (prefab == null) { Debug.LogError($"[ResourcesProvider] 实例化失败: {path}"); onLoaded?.Invoke(null); yield break; }
-        AddRef(path);
+        AddRef(path, prefab);
         var instance = parent ? UnityEngine.Object.Instantiate(prefab, parent) : UnityEngine.Object.Instantiate(prefab);
         onLoaded?.Invoke(instance);
     }
@@ -56,7 +56,12 @@ public class ResourcesProvider : IResourceProvider
     public void Release(string path)
     {
         if (!_refs.TryGetValue(path, out var rc)) return;
-        if (--rc.Count <= 0) { _refs.Remove(path); Resources.UnloadAsset(rc.Asset); }
+        rc.Count--;
+        if (rc.Count <= 0)
+        {
+            if (rc.Asset != null) Resources.UnloadAsset(rc.Asset);
+            _refs.Remove(path);
+        }
     }
 
     public void DestroyInstance(GameObject instance)
@@ -64,10 +69,11 @@ public class ResourcesProvider : IResourceProvider
         if (instance) UnityEngine.Object.Destroy(instance);
     }
 
-    private void AddRef(string path)
+    private void AddRef(string path, UnityEngine.Object asset)
     {
         if (!_refs.ContainsKey(path)) _refs[path] = new RefCount();
         _refs[path].Count++;
+        _refs[path].Asset = asset;
     }
 
     private class RefCount { public int Count; public UnityEngine.Object Asset; }

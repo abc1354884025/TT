@@ -41,7 +41,10 @@ public class TestPanel : UIPanel
         _unbind.Add(_closeButton.BindClick(OnCloseClicked));
         _unbind.Add(_progressSlider.BindTo(_vm.Progress));
         _unbind.Add(_testToggle.BindTo(_vm.IsToggleOn));
-        _unbind.Add(_emptyTip.BindInactive(_vm.ClickCount));
+        // ClickCount > 0 时隐藏空状态提示
+        void UpdateEmptyTip(int count) { if (_emptyTip) _emptyTip.SetActive(count == 0); }
+        _vm.ClickCount.OnChanged += UpdateEmptyTip;
+        _unbind.Add(() => _vm.ClickCount.OnChanged -= UpdateEmptyTip);
 
         if (_itemList)
             _itemList.SetData(_vm.Items, BindListItem);

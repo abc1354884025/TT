@@ -1,1 +1,23 @@
-{"appid":"","projectname":"TT","unity":{"build":{"webgl":"","native":{"il2cpp":"","apk":"","fullApk":""},"instantGame":""},"publishType":"AndroidNativeOnly","starkSdkVersion":"Without StarkSDK","unityToolsVersion":"","unityEngineVersion":"2022.3.62f3c1","arch":""}}
+{
+    "appid": "tt7ced0a50e288d9cd07",
+    "projectname": "TT",
+    "unity": {
+        "build": {
+            "webgl": "",
+            "native": {
+                "il2cpp": "",
+                "apk": "",
+                "fullApk": ""
+            },
+            "instantGame": ""
+        },
+        "publishType": "AndroidNativeOnly",
+        "starkSdkVersion": "Without StarkSDK",
+        "unityToolsVersion": "",
+        "unityEngineVersion": "2022.3.62f3c1",
+        "arch": ""
+    },
+    "setting": {
+        "urlCheck": false
+    }
+}

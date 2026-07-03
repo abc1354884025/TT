@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Networking;
 
 /// <summary>
 /// HybridCLR 热更启动器。挂载在启动场景的 GameObject 上。
