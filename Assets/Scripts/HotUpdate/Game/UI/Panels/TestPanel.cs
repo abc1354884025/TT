@@ -20,9 +20,6 @@ public class TestPanel : UIPanel{
     [SerializeField] private Slider _progressSlider;
     [SerializeField] private Toggle _testToggle;
 
-    [Header("列表")]
-    [SerializeField] private UIList _itemList;
-
     [Header("其他")]
     [SerializeField] private GameObject _emptyTip;
 
@@ -45,9 +42,6 @@ public class TestPanel : UIPanel{
         _vm.ClickCount.OnChanged += UpdateEmptyTip;
         _unbind.Add(() => _vm.ClickCount.OnChanged -= UpdateEmptyTip);
 
-        if (_itemList)
-            _itemList.SetData(_vm.Items, BindListItem);
-
         _vm.PropertyChanged += OnVMChanged;
     }
 
@@ -65,18 +59,6 @@ public class TestPanel : UIPanel{
     }
 
     private void OnCloseClicked() => UIManager.Instance.Close(this);
-
-    private void BindListItem(GameObject go, object data, int index)
-    {
-        var item = data as TestItemData;
-        if (item == null) return;
-
-        var nameT = go.transform.Find("NameText");
-        if (nameT) nameT.GetComponent<TMP_Text>().text = item.Name;
-
-        var valT = go.transform.Find("ValueText");
-        if (valT) valT.GetComponent<TMP_Text>().text = item.Value.ToString();
-    }
 
     private void OnVMChanged(string prop)
     {

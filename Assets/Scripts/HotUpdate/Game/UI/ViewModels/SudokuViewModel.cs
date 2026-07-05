@@ -9,6 +9,9 @@ using UnityEngine;
         private SudokuRuleEngine _ruleEngine;
         private Vector2Int _selectedCell = new Vector2Int(-1, -1);
 
+        /// <summary>棋盘状态变化时触发（选中、填数、错误等），Panel 订阅后刷新 UI</summary>
+        public event System.Action OnGridChanged;
+
         /// <summary>当前选中的单元格（-1,-1 表示未选中）</summary>
         public Vector2Int SelectedCell => _selectedCell;
 
@@ -28,11 +31,15 @@ using UnityEngine;
             Grid.Initialize(data.Clues);
         }
 
+        /// <summary>触发棋盘刷新通知（供 SudokuCellWidget 调用）</summary>
+        public void RaiseGridChanged() => OnGridChanged?.Invoke();
+
         /// <summary>选中一个格子</summary>
         public void SelectCell(int x, int y)
         {
             if (!Grid.Grid.InBounds(x, y)) return;
             _selectedCell = new Vector2Int(x, y);
+            OnGridChanged?.Invoke();
         }
 
         /// <summary>在选中的格子中填入数字</summary>

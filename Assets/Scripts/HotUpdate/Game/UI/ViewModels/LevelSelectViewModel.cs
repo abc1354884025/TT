@@ -7,6 +7,12 @@ using System.Collections.Generic;
         public PuzzleType CurrentPuzzleType { get; private set; }
         public List<LevelSelectItemData> Levels { get; private set; } = new List<LevelSelectItemData>();
 
+        /// <summary>刷新关卡列表数据（通关后回来需要重新拉取存档状态）</summary>
+        public void RefreshLevels()
+        {
+            Levels = LevelDatabase.GetLevelSelectItems(CurrentPuzzleType);
+        }
+
         public void Init(PuzzleType type)
         {
             CurrentPuzzleType = type;

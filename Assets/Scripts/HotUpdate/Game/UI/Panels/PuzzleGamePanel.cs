@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using KingSoft.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,11 +19,18 @@ using UnityEngine.UI;
         [SerializeField] protected Button HintButton;
         [SerializeField] protected GridCellWidget CellPrefab;
 
+        [Header("LoopScrollView 模式（可选）")]
+        [Tooltip("非空时使用 LoopScrollView 布局网格，忽略 GridRenderer")]
+        [SerializeField] protected LoopScrollView GridScrollView;
+
         protected PuzzleGameViewModel VM;
         protected GridInputHandler InputHandler;
         protected PuzzleGridRenderer GridRenderer;
         protected readonly List<Action> Unbind = new List<Action>();
         protected PuzzleLevelData LevelData;
+
+        /// <summary>子类覆盖返回 true 来使用 LoopScrollView 网格模式</summary>
+        protected virtual bool UseLoopScrollGrid => false;
 
         private Coroutine _timerCoroutine;
 
@@ -54,9 +62,20 @@ using UnityEngine.UI;
             InputHandler.SetDragEnabled(EnableDrag());
             InputHandler.OnMove += OnInputMove;
 
-            // 初始化网格渲染器
-            if (CellPrefab && GridArea)
+            // 初始化网格布局
+            if (UseLoopScrollGrid && GridScrollView)
             {
+                // LoopScrollView 模式：自动布局、子类通过 OnCellUpdate 绑定
+                var cellPrefab = CellPrefab ? CellPrefab.gameObject : null;
+                if (cellPrefab)
+                {
+                    GridScrollView.Initialize(cellPrefab, LevelData.GridWidth * LevelData.GridHeight);
+                    GridScrollView.OnCellUpdate.AddListener(OnGridCellUpdate);
+                }
+            }
+            else if (CellPrefab && GridArea)
+            {
+                // 传统 GridRenderer 模式
                 GridRenderer = new PuzzleGridRenderer(CellPrefab.gameObject, GridArea, LevelData.GridWidth * LevelData.GridHeight + 10);
                 GridRenderer.Rebuild(LevelData.GridWidth, LevelData.GridHeight);
             }
@@ -84,7 +103,9 @@ using UnityEngine.UI;
             if (InputHandler)
                 InputHandler.OnMove -= OnInputMove;
 
-            // 清理网格渲染
+            // 清理网格
+            if (GridScrollView)
+                GridScrollView.OnCellUpdate.RemoveListener(OnGridCellUpdate);
             GridRenderer?.Clear();
 
             // 解绑 UI
@@ -104,8 +125,11 @@ using UnityEngine.UI;
         /// <summary>是否启用拖拽模式</summary>
         protected abstract bool EnableDrag();
 
-        /// <summary>渲染/更新网格显示</summary>
+        /// <summary>渲染/更新网格显示（传统 GridRenderer 模式）</summary>
         protected abstract void RenderGrid();
+
+        /// <summary>LoopScrollView 模式：每个 cell 进入可见区域时触发。子类覆写。</summary>
+        protected virtual void OnGridCellUpdate(int index, GameObject go) { }
 
         // --- 公共逻辑 ---
 
