@@ -57,7 +57,7 @@ public class UIManager : MonoSingleton<UIManager>
                     _layerRoots[layer] = existing.GetComponent<RectTransform>();
                 else
                 {
-                    var go = new GameObject($"Canvas_{layer}", typeof(Canvas), typeof(CanvasScaler));
+                    var go = new GameObject($"Canvas_{layer}", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
                     go.transform.SetParent(transform);
                     var canvas = go.GetComponent<Canvas>();
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;

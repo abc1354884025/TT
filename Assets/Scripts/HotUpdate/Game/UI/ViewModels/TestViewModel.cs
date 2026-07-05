@@ -5,8 +5,7 @@ using UnityEngine;
 /// 测试 ViewModel。演示 BindableProperty 在热更层的正常使用。
 /// 属性变化自动通知 UI 刷新。
 /// </summary>
-public class TestViewModel : ObservableObject
-{
+public class TestViewModel : ObservableObject{
     public BindableProperty<string> Title = new BindableProperty<string>("测试面板");
     public BindableProperty<int> ClickCount = new BindableProperty<int>(0);
     public BindableProperty<float> Progress = new BindableProperty<float>(0.5f);
@@ -43,8 +42,7 @@ public class TestViewModel : ObservableObject
     }
 }
 
-public class TestItemData
-{
+public class TestItemData{
     public string Name;
     public int Value;
 }

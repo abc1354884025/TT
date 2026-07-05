@@ -19,9 +19,16 @@ using UnityEngine.Networking;
 /// </summary>
 public class HotUpdateBootstrap : MonoBehaviour
 {
+    [Header("开发设置")]
+    [Tooltip("开发模式：跳过 CDN 下载，直接用本地 Resources 和已加载的程序集")]
+    [SerializeField] private bool _devMode = true;
+
     [Header("CDN 配置")]
     [Tooltip("CDN 基础 URL")]
     [SerializeField] private string _cdnBaseUrl = "http://your-cdn.com/game/";
+
+    [Tooltip("版本清单文件名（如 version.json）。应用启动时先拉此文件获取最新版本，避免版本号写死在包里")]
+    [SerializeField] private string _versionManifest = "version.json";
 
     [Tooltip("热更 DLL 文件名列表（不含路径），如 HotUpdate.dll")]
     [SerializeField] private string[] _hotUpdateDlls = new[] { "HotUpdate.dll" };
@@ -29,12 +36,12 @@ public class HotUpdateBootstrap : MonoBehaviour
     [Tooltip("UI AB 包列表（不含 URL 前缀），如 ui_panels")]
     [SerializeField] private string[] _uiBundles = new[] { "ui_panels" };
 
-    [Tooltip("版本号，用于 CDN 缓存更新")]
-    [SerializeField] private string _version = "1.0.0";
+    [Tooltip("兜底版本号：版本清单拉不到时使用")]
+    [SerializeField] private string _fallbackVersion = "1.0.0";
 
     [Header("启动设置")]
     [Tooltip("热更完成后自动打开的面板")]
-    [SerializeField] private string _startPanel;
+    [SerializeField] private string _startPanel = "MainMenuPanel";
 
     [Tooltip("CDN 下载失败时是否退回本地 Resources 模式")]
     [SerializeField] private bool _fallbackToResources = true;
@@ -51,7 +58,7 @@ public class HotUpdateBootstrap : MonoBehaviour
 
     private IEnumerator Bootstrap()
     {
-        Debug.Log($"[HotUpdate] ===== 开始热更流程 v{_version} =====");
+        Debug.Log($"[HotUpdate] ===== 开始热更流程 =====");
         var startTime = Time.realtimeSinceStartup;
 
         // --- 阶段 1: 初始化 AOT 框架 ---
@@ -59,96 +66,134 @@ public class HotUpdateBootstrap : MonoBehaviour
         var ui = UIManager.Instance;
         yield return null; // 等一帧确保 Canvas 创建
 
-        // --- 阶段 2: 下载并加载热更 DLL ---
-        Debug.Log("[HotUpdate] 阶段 2/4: 下载热更 DLL...");
         Assembly hotUpdateAss = null;
+        string resolvedVersion = _fallbackVersion;
 
-        foreach (var dllName in _hotUpdateDlls)
+        if (_devMode)
         {
-            var url = $"{_cdnBaseUrl}{_version}/{dllName}";
-            byte[] dllBytes = null;
-            yield return DownloadBytes(url, bytes => dllBytes = bytes);
-
-            if (dllBytes != null && dllBytes.Length > 0)
-            {
-                try
-                {
-                    // HybridCLR: 加载热更 DLL
-                    // 如果用 HybridCLR 的 RuntimeApi，替换下面这行：
-                    // hotUpdateAss = RuntimeApi.LoadAssembly(dllBytes);
-                    hotUpdateAss = Assembly.Load(dllBytes);
-                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[HotUpdate] DLL 加载失败: {dllName}, {e.Message}");
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"[HotUpdate] DLL 下载失败: {url}");
-            }
-        }
-
-        if (hotUpdateAss != null)
-        {
-            ui.SetHotUpdateAssembly(hotUpdateAss);
-        }
-        else if (!_fallbackToResources)
-        {
-            Debug.LogError("[HotUpdate] 热更 DLL 全部加载失败且不允许退回！");
-            yield break;
+            // --- 开发模式：跳过 CDN 下载，直接使用本地 ---
+            Debug.Log("[HotUpdate] 开发模式：跳过 CDN 下载，使用本地 Resources + 已加载程序集");
         }
         else
         {
-            Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
-        }
+            // --- 拉取版本清单，获取最新版本号 ---
+            Debug.Log("[HotUpdate] 拉取版本清单...");
+            string manifestUrl = $"{_cdnBaseUrl}{_versionManifest}";
+            string manifestJson = null;
+            yield return DownloadString(manifestUrl, s => manifestJson = s);
 
-        // --- 阶段 3: 下载 UI AssetBundle ---
-        Debug.Log("[HotUpdate] 阶段 3/4: 下载 UI AssetBundle...");
-        var abProvider = new AssetBundleProvider(this);
-
-        foreach (var bundleName in _uiBundles)
-        {
-            var url = $"{_cdnBaseUrl}{_version}/{bundleName}";
-            bool done = false; bool success = false;
-            abProvider.DownloadBundle(bundleName, url, ok => { done = true; success = ok; });
-
-            float waitStart = Time.realtimeSinceStartup;
-            yield return new WaitUntil(() => done || (_timeoutSeconds > 0 && Time.realtimeSinceStartup - waitStart > _timeoutSeconds));
-
-            if (!done)
+            if (!string.IsNullOrEmpty(manifestJson))
             {
-                Debug.LogWarning($"[HotUpdate] AB 下载超时: {bundleName}");
-                break;
+                try
+                {
+                    var manifest = JsonUtility.FromJson<VersionManifest>(manifestJson);
+                    if (manifest != null && !string.IsNullOrEmpty(manifest.version))
+                    {
+                        resolvedVersion = manifest.version;
+                        Debug.Log($"[HotUpdate] 最新版本: {resolvedVersion}");
+                    }
+                }
+                catch { Debug.LogWarning("[HotUpdate] 版本清单解析失败，使用兜底版本"); }
             }
-            if (!success)
+            else
             {
-                Debug.LogWarning($"[HotUpdate] AB 下载失败: {bundleName}");
-                break;
+                Debug.LogWarning("[HotUpdate] 版本清单拉取失败，使用兜底版本");
             }
-        }
 
-        // 注册路径映射（示例：面板 "ShopPanel" 在 ui_panels 包中名为 "ShopPanel"）
-        // 实际项目可用配置文件或按约定映射
-        abProvider.RegisterPath("UI/Panels/ShopPanel", "ui_panels", "ShopPanel");
-        abProvider.RegisterPath("UI/Panels/TestPanel", "ui_panels", "TestPanel");
+            // --- 阶段 2: 下载并加载热更 DLL ---
+            Debug.Log("[HotUpdate] 阶段 2/4: 下载热更 DLL...");
 
-        // 如果 AB 加载成功，切换到 AB Provider
-        if (abProvider.IsBundleReady(_uiBundles.Length > 0 ? _uiBundles[0] : ""))
-        {
-            ui.SetResourceProvider(abProvider);
-            Debug.Log("[HotUpdate] 已切换到 AssetBundleProvider");
+            foreach (var dllName in _hotUpdateDlls)
+            {
+                var url = $"{_cdnBaseUrl}{resolvedVersion}/{dllName}";
+                byte[] dllBytes = null;
+                yield return DownloadBytes(url, bytes => dllBytes = bytes);
+
+                if (dllBytes != null && dllBytes.Length > 0)
+                {
+                    try
+                    {
+                        // HybridCLR: 加载热更 DLL
+                        // 如果用 HybridCLR 的 RuntimeApi，替换下面这行：
+                        // hotUpdateAss = RuntimeApi.LoadAssembly(dllBytes);
+                        hotUpdateAss = Assembly.Load(dllBytes);
+                        Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"[HotUpdate] DLL 加载失败: {dllName}, {e.Message}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[HotUpdate] DLL 下载失败: {url}");
+                }
+            }
+
+            if (hotUpdateAss != null)
+            {
+                ui.SetHotUpdateAssembly(hotUpdateAss);
+            }
+            else if (!_fallbackToResources)
+            {
+                Debug.LogError("[HotUpdate] 热更 DLL 全部加载失败且不允许退回！");
+                yield break;
+            }
+            else
+            {
+                Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
+            }
+
+            // --- 阶段 3: 下载 UI AssetBundle ---
+            Debug.Log("[HotUpdate] 阶段 3/4: 下载 UI AssetBundle...");
+            var abProvider = new AssetBundleProvider(this);
+
+            foreach (var bundleName in _uiBundles)
+            {
+                var url = $"{_cdnBaseUrl}{resolvedVersion}/{bundleName}";
+                bool done = false; bool success = false;
+                abProvider.DownloadBundle(bundleName, url, ok => { done = true; success = ok; });
+
+                float waitStart = Time.realtimeSinceStartup;
+                yield return new WaitUntil(() => done || (_timeoutSeconds > 0 && Time.realtimeSinceStartup - waitStart > _timeoutSeconds));
+
+                if (!done)
+                {
+                    Debug.LogWarning($"[HotUpdate] AB 下载超时: {bundleName}");
+                    break;
+                }
+                if (!success)
+                {
+                    Debug.LogWarning($"[HotUpdate] AB 下载失败: {bundleName}");
+                    break;
+                }
+            }
+
+            // 注册路径映射
+            abProvider.RegisterPath("UI/Panels/MainMenuPanel", "ui_panels", "MainMenuPanel");
+            abProvider.RegisterPath("UI/Panels/LevelSelectPanel", "ui_panels", "LevelSelectPanel");
+            abProvider.RegisterPath("UI/Panels/SudokuPanel", "ui_panels", "SudokuPanel");
+            abProvider.RegisterPath("UI/Panels/NurikabePanel", "ui_panels", "NurikabePanel");
+            abProvider.RegisterPath("UI/Panels/NumberLinkPanel", "ui_panels", "NumberLinkPanel");
+            abProvider.RegisterPath("UI/Panels/HashiBridgePanel", "ui_panels", "HashiBridgePanel");
+            abProvider.RegisterPath("UI/Panels/SettingsPanel", "ui_panels", "SettingsPanel");
+            abProvider.RegisterPath("UI/Panels/TestPanel", "ui_panels", "TestPanel");
+
+            // 如果 AB 加载成功，切换到 AB Provider
+            if (abProvider.IsBundleReady(_uiBundles.Length > 0 ? _uiBundles[0] : ""))
+            {
+                ui.SetResourceProvider(abProvider);
+                Debug.Log("[HotUpdate] 已切换到 AssetBundleProvider");
+            }
         }
 
         // --- 阶段 4: 打开首个面板 ---
         Debug.Log("[HotUpdate] 阶段 4/4: 打开初始面板...");
         if (!string.IsNullOrEmpty(_startPanel))
         {
-            // 从热更 Assembly 查找类型并打开
             ui.Open(_startPanel, new StartPanelData
             {
-                Version = _version,
+                Version = resolvedVersion,
                 IsHotUpdated = hotUpdateAss != null
             });
         }
@@ -160,6 +205,21 @@ public class HotUpdateBootstrap : MonoBehaviour
     #endregion
 
     #region 辅助
+
+    /// <summary>下载文本数据（用于版本清单等）</summary>
+    private IEnumerator DownloadString(string url, Action<string> onComplete)
+    {
+        using var req = UnityWebRequest.Get(url);
+        req.timeout = Mathf.CeilToInt(_timeoutSeconds > 0 ? _timeoutSeconds : 10);
+        yield return req.SendWebRequest();
+        if (req.result == UnityWebRequest.Result.Success)
+            onComplete?.Invoke(req.downloadHandler.text);
+        else
+        {
+            Debug.LogWarning($"[HotUpdate] 下载失败: {url}, {req.error}");
+            onComplete?.Invoke(null);
+        }
+    }
 
     /// <summary>下载字节数据</summary>
     private IEnumerator DownloadBytes(string url, Action<byte[]> onComplete)
@@ -196,4 +256,13 @@ public class StartPanelData
 {
     public string Version;
     public bool IsHotUpdated;
+}
+
+/// <summary>CDN 版本清单。version.json 的格式：
+/// { "version": "2.0.0", "note": "修复了xxx" }</summary>
+[Serializable]
+public class VersionManifest
+{
+    public string version;
+    public string note;
 }

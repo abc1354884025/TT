@@ -8,8 +8,7 @@ using UnityEngine.UI;
 /// 测试面板——放在 HotUpdate 程序集中，验证热更 DLL 加载和反射创建。
 /// 功能：数据绑定、按钮事件、Slider/Toggle 绑定、列表展示。
 /// </summary>
-public class TestPanel : UIPanel
-{
+public class TestPanel : UIPanel{
     [Header("文本")]
     [SerializeField] private TMP_Text _titleText;
 
