@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using KingSoft.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,19 +21,22 @@ public class PreparePanel : UIPanel
     [Header("背包网格")]
     [SerializeField] private BackpackGridWidget _gridWidget;
 
-    [Header("商店")]
-    [SerializeField] private UIList _shopList;
-    [SerializeField] private Button _refreshShopButton;
+    [Header("商店列表（LoopScrollView）")]
+    [SerializeField] private LoopScrollView _shopList;
 
-    [Header("物品栏")]
-    [SerializeField] private UIList _inventoryList;
+    [Header("物品栏列表（LoopScrollView）")]
+    [SerializeField] private LoopScrollView _inventoryList;
 
     [Header("操作")]
+    [SerializeField] private Button _refreshShopButton;
     [SerializeField] private Button _battleButton;
     [SerializeField] private Button _backButton;
 
     private PrepareViewModel _vm;
     private readonly List<Action> _unbind = new List<Action>();
+
+    private List<ItemData> _lastShopItems;
+    private List<ItemData> _lastInventoryItems;
 
     #region 生命周期
 
@@ -55,15 +59,25 @@ public class PreparePanel : UIPanel
         _vm.CurrentStats.OnChanged += OnStatsChanged;
         _vm.CurrentStats.Refresh();
 
-        // 商店
-        if (_shopList) RefreshShopUI();
-        if (_refreshShopButton)
-            _unbind.Add(_refreshShopButton.BindClick(OnRefreshShop));
+        // 商店 LoopScrollView
+        if (_shopList)
+        {
+            _shopList.OnCellInit.AddListener(OnShopCellInit);
+            _shopList.OnCellUpdate.AddListener(OnShopCellUpdate);
+        }
+        RefreshShopUI();
 
-        // 物品栏
-        if (_inventoryList) RefreshInventoryUI();
+        // 物品栏 LoopScrollView
+        if (_inventoryList)
+        {
+            _inventoryList.OnCellInit.AddListener(OnInventoryCellInit);
+            _inventoryList.OnCellUpdate.AddListener(OnInventoryCellUpdate);
+        }
+        RefreshInventoryUI();
 
         // 按钮
+        if (_refreshShopButton)
+            _unbind.Add(_refreshShopButton.BindClick(OnRefreshShop));
         if (_battleButton)
             _unbind.Add(_battleButton.BindClick(OnStartBattle));
         if (_backButton)
@@ -78,6 +92,74 @@ public class PreparePanel : UIPanel
         _vm.CurrentStats.OnChanged -= OnStatsChanged;
         _vm?.Dispose();
         _vm = null;
+
+        // 清理事件
+        if (_shopList)
+        {
+            _shopList.OnCellInit.RemoveAllListeners();
+            _shopList.OnCellUpdate.RemoveAllListeners();
+        }
+        if (_inventoryList)
+        {
+            _inventoryList.OnCellInit.RemoveAllListeners();
+            _inventoryList.OnCellUpdate.RemoveAllListeners();
+        }
+    }
+
+    #endregion
+
+    #region 商店
+
+    private void OnShopCellInit(GameObject cell)
+    {
+        // 首次创建 cell 时挂 ShopItemWidget
+        if (!cell.GetComponent<ShopItemWidget>())
+            cell.AddComponent<ShopItemWidget>();
+    }
+
+    private void OnShopCellUpdate(int index, GameObject cell)
+    {
+        if (_lastShopItems == null || index >= _lastShopItems.Count) return;
+        var item = _lastShopItems[index];
+        var widget = cell.GetComponent<ShopItemWidget>();
+        if (widget)
+        {
+            widget.Init(item, _vm.Gold.Value >= item.BuyPrice);
+            widget.OnBuyClicked -= OnBuyItem;
+            widget.OnBuyClicked += OnBuyItem;
+        }
+    }
+
+    #endregion
+
+    #region 物品栏
+
+    private void OnInventoryCellInit(GameObject cell)
+    {
+        // 挂 Button 用于点击
+        if (!cell.GetComponent<Button>())
+            cell.AddComponent<Button>();
+    }
+
+    private void OnInventoryCellUpdate(int index, GameObject cell)
+    {
+        if (_lastInventoryItems == null || index >= _lastInventoryItems.Count) return;
+        var item = _lastInventoryItems[index];
+
+        var txt = cell.GetComponentInChildren<TMP_Text>();
+        if (txt) txt.text = item.Name;
+        else
+        {
+            var newTxt = new GameObject("NameText", typeof(TMP_Text)).GetComponent<TMP_Text>();
+            newTxt.transform.SetParent(cell.transform, false);
+            newTxt.text = item.Name;
+            newTxt.fontSize = 18;
+            newTxt.alignment = TextAlignmentOptions.Center;
+        }
+
+        var btn = cell.GetComponent<Button>();
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(() => OnItemClick(item));
     }
 
     #endregion
@@ -94,32 +176,17 @@ public class PreparePanel : UIPanel
     private void RefreshShopUI()
     {
         if (_shopList == null || _vm == null) return;
-        _shopList.SetData(_vm.ShopItems, (go, item, idx) =>
-        {
-            var widget = go.GetComponent<ShopItemWidget>();
-            if (widget)
-            {
-                widget.Init(item, _vm.Gold.Value >= item.BuyPrice);
-                widget.OnBuyClicked += OnBuyItem;
-            }
-        });
+        _lastShopItems = _vm.ShopItems;
+        _shopList.Initialize(null, _lastShopItems.Count);
+        _shopList.ReloadData(_lastShopItems.Count);
     }
 
     private void RefreshInventoryUI()
     {
         if (_inventoryList == null || _vm == null) return;
-        _inventoryList.SetData(_vm.Inventory, (go, item, idx) =>
-        {
-            var nameText = go.transform.Find("NameText")?.GetComponent<TMP_Text>();
-            if (nameText) nameText.text = item.Name;
-
-            var btn = go.GetComponent<Button>();
-            if (btn)
-            {
-                btn.onClick.RemoveAllListeners();
-                btn.onClick.AddListener(() => OnItemClick(item));
-            }
-        });
+        _lastInventoryItems = _vm.Inventory;
+        _inventoryList.Initialize(null, _lastInventoryItems.Count);
+        _inventoryList.ReloadData(_lastInventoryItems.Count);
     }
 
     #endregion
@@ -143,12 +210,10 @@ public class PreparePanel : UIPanel
 
     private void OnItemClick(ItemData item)
     {
-        // 点击物品 → 自动放置到第一个空位
         for (int y = 0; y < _vm.BagGrid.Height; y++)
         {
             for (int x = 0; x < _vm.BagGrid.Width; x++)
             {
-                var shape = item.GetShape();
                 if (_vm.TryPlaceItem(item, x, y))
                 {
                     RefreshInventoryUI();
@@ -161,7 +226,6 @@ public class PreparePanel : UIPanel
 
     private void OnStartBattle()
     {
-        // 关闭准备面板，打开战斗面板
         UIManager.Instance.Close(this);
         UIManager.Instance.Open("BattlePanel", _vm);
     }
