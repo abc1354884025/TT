@@ -3,8 +3,8 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// 商店物品卡片——显示物品图标/名称/价格/稀有度边框。
-/// 点击购买。
+/// 商店物品卡片——显示物品图标/名称/价格/稀有度边框，点击购买。
+/// 组件自动从子对象查找，也支持 Inspector 拖拽覆盖。
 /// </summary>
 public class ShopItemWidget : MonoBehaviour
 {
@@ -16,6 +16,15 @@ public class ShopItemWidget : MonoBehaviour
 
     public ItemData ItemData { get; private set; }
     public event System.Action<ItemData> OnBuyClicked;
+
+    private void Awake()
+    {
+        // 自动查找（优先 Inspector 拖拽的值）
+        if (!_nameText) _nameText = transform.Find("NameText")?.GetComponent<TMP_Text>();
+        if (!_priceText) _priceText = transform.Find("PriceText")?.GetComponent<TMP_Text>();
+        if (!_buyButton) _buyButton = GetComponent<Button>();
+        if (!_rarityBadge) _rarityBadge = GetComponent<RarityBadgeWidget>();
+    }
 
     public void Init(ItemData data, bool canAfford)
     {

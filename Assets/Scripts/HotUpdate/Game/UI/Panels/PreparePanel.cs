@@ -136,30 +136,19 @@ public class PreparePanel : UIPanel
 
     private void OnInventoryCellInit(GameObject cell)
     {
-        // 挂 Button 用于点击
-        if (!cell.GetComponent<Button>())
-            cell.AddComponent<Button>();
+        if (!cell.GetComponent<InventoryItemWidget>())
+        {
+            var widget = cell.AddComponent<InventoryItemWidget>();
+            widget.OnClicked += OnItemClick;
+        }
     }
 
     private void OnInventoryCellUpdate(int index, GameObject cell)
     {
         if (_lastInventoryItems == null || index >= _lastInventoryItems.Count) return;
         var item = _lastInventoryItems[index];
-
-        var txt = cell.GetComponentInChildren<TMP_Text>();
-        if (txt) txt.text = item.Name;
-        else
-        {
-            var newTxt = new GameObject("NameText", typeof(TMP_Text)).GetComponent<TMP_Text>();
-            newTxt.transform.SetParent(cell.transform, false);
-            newTxt.text = item.Name;
-            newTxt.fontSize = 18;
-            newTxt.alignment = TextAlignmentOptions.Center;
-        }
-
-        var btn = cell.GetComponent<Button>();
-        btn.onClick.RemoveAllListeners();
-        btn.onClick.AddListener(() => OnItemClick(item));
+        var widget = cell.GetComponent<InventoryItemWidget>();
+        if (widget) widget.Init(item);
     }
 
     #endregion
