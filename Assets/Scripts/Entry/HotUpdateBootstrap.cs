@@ -41,7 +41,7 @@ public class HotUpdateBootstrap : MonoBehaviour
 
     [Header("启动设置")]
     [Tooltip("热更完成后自动打开的面板")]
-    [SerializeField] private string _startPanel = "MainMenuPanel";
+    [SerializeField] private string _startPanel;
 
     [Tooltip("CDN 下载失败时是否退回本地 Resources 模式")]
     [SerializeField] private bool _fallbackToResources = true;
@@ -169,14 +169,7 @@ public class HotUpdateBootstrap : MonoBehaviour
                 }
             }
 
-            // 注册路径映射
-            abProvider.RegisterPath("UI/Panels/MainMenuPanel", "ui_panels", "MainMenuPanel");
-            abProvider.RegisterPath("UI/Panels/LevelSelectPanel", "ui_panels", "LevelSelectPanel");
-            abProvider.RegisterPath("UI/Panels/SudokuPanel", "ui_panels", "SudokuPanel");
-            abProvider.RegisterPath("UI/Panels/NurikabePanel", "ui_panels", "NurikabePanel");
-            abProvider.RegisterPath("UI/Panels/NumberLinkPanel", "ui_panels", "NumberLinkPanel");
-            abProvider.RegisterPath("UI/Panels/HashiBridgePanel", "ui_panels", "HashiBridgePanel");
-            abProvider.RegisterPath("UI/Panels/SettingsPanel", "ui_panels", "SettingsPanel");
+            // 注册路径映射（按需添加你的面板）
             abProvider.RegisterPath("UI/Panels/TestPanel", "ui_panels", "TestPanel");
 
             // 如果 AB 加载成功，切换到 AB Provider
