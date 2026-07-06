@@ -1,0 +1,49 @@
+{
+  "enemies": [
+    {
+      "name": "哥布林",
+      "difficulty": 1,
+      "attack": 3,
+      "defense": 1,
+      "hp": 20,
+      "critChance": 5,
+      "iconPath": "Icons/goblin"
+    },
+    {
+      "name": "骷髅兵",
+      "difficulty": 2,
+      "attack": 6,
+      "defense": 3,
+      "hp": 30,
+      "critChance": 5,
+      "iconPath": "Icons/skeleton"
+    },
+    {
+      "name": "石像鬼",
+      "difficulty": 3,
+      "attack": 8,
+      "defense": 6,
+      "hp": 40,
+      "critChance": 10,
+      "iconPath": "Icons/gargoyle"
+    },
+    {
+      "name": "巨魔",
+      "difficulty": 4,
+      "attack": 12,
+      "defense": 8,
+      "hp": 60,
+      "critChance": 10,
+      "iconPath": "Icons/troll"
+    },
+    {
+      "name": "恶龙",
+      "difficulty": 5,
+      "attack": 18,
+      "defense": 12,
+      "hp": 80,
+      "critChance": 15,
+      "iconPath": "Icons/dragon"
+    }
+  ]
+}

@@ -3,7 +3,8 @@
     "rootNamespace": "HotUpdate",
     "references": [
         "UIFramework",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "TTLitJson"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

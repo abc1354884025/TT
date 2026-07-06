@@ -1,0 +1,11 @@
+{
+  "gridWidth": 6,
+  "gridHeight": 8,
+  "maxRounds": 60,
+  "flatDamageReduction": 0.5,
+  "jitterRange": 2,
+  "critMultiplier": 1.5,
+  "startingGold": 100,
+  "shopRefreshCost": 2,
+  "shopSlotCount": 5
+}
