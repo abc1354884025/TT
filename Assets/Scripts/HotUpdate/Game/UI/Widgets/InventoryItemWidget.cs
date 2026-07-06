@@ -1,26 +1,33 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 物品栏列表项——显示名称、稀有度颜色、点击放入背包。
+/// 物品栏列表项——显示名称、稀有度颜色。
+/// 实现拖拽接口，通过事件通知父面板处理拖放逻辑。
 /// </summary>
-public class InventoryItemWidget : MonoBehaviour
+public class InventoryItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] private TMP_Text _nameText;
     [SerializeField] private Image _bg;
     [SerializeField] private Button _button;
 
     public ItemData ItemData { get; private set; }
-    public event System.Action<ItemData> OnClicked;
+
+    /// <summary>拖拽开始时触发（由 PreparePanel 订阅）</summary>
+    public event System.Action<ItemData> OnBeginDragItem;
+
+    /// <summary>拖拽结束时触发</summary>
+    public event System.Action OnEndDragItem;
 
     private static readonly Color[] RarityBgColors = new[]
     {
-        new Color(0.25f, 0.25f, 0.30f),  // Common
-        new Color(0.15f, 0.35f, 0.15f),  // Uncommon
-        new Color(0.15f, 0.25f, 0.45f),  // Rare
-        new Color(0.30f, 0.15f, 0.45f),  // Epic
-        new Color(0.45f, 0.35f, 0.05f),  // Legendary
+        new Color(0.25f, 0.25f, 0.30f),
+        new Color(0.15f, 0.35f, 0.15f),
+        new Color(0.15f, 0.25f, 0.45f),
+        new Color(0.30f, 0.15f, 0.45f),
+        new Color(0.45f, 0.35f, 0.05f),
     };
 
     private void Awake()
@@ -28,7 +35,6 @@ public class InventoryItemWidget : MonoBehaviour
         if (!_nameText) _nameText = GetComponentInChildren<TMP_Text>();
         if (!_bg) _bg = GetComponent<Image>();
         if (!_button) _button = GetComponent<Button>();
-        if (_button) _button.onClick.AddListener(() => OnClicked?.Invoke(ItemData));
     }
 
     public void Init(ItemData data)
@@ -40,5 +46,21 @@ public class InventoryItemWidget : MonoBehaviour
             int idx = (int)data.Rarity;
             _bg.color = idx < RarityBgColors.Length ? RarityBgColors[idx] : RarityBgColors[0];
         }
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (ItemData != null)
+            OnBeginDragItem?.Invoke(ItemData);
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        // DragDropManager.Update() 自动处理
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        OnEndDragItem?.Invoke();
     }
 }

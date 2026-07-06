@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// 拖放管理器——管理物品拖拽状态、Ghost 渲染、放置校验。
-/// 挂载在场景常驻 GameObject 上。
+/// 拖放管理器——支持从物品栏拖拽到网格，以及网格内拖拽。
+/// 实时预览放置位置，绿=可放，红=不可。
+/// 挂载在场景 Canvas 下的常驻 GameObject 上。
 /// </summary>
 public class DragDropManager : MonoBehaviour
 {
@@ -11,12 +12,13 @@ public class DragDropManager : MonoBehaviour
 
     [SerializeField] private DragGhostWidget _ghostPrefab;
 
-    /// <summary>当前拖拽状态</summary>
-    public bool IsDragging => _draggedItem != null;
-    public BackpackItemWidget DraggedWidget => _draggedItem;
+    public bool IsDragging => _isDragging;
+    public ItemData DraggedItemData { get; private set; }
+    public int CurrentRotation { get; private set; }
     public DragGhostWidget Ghost { get; private set; }
 
-    private BackpackItemWidget _draggedItem;
+    private bool _isDragging;
+    private BackpackItemWidget _draggedGridItem; // 从网格拖拽的已有物品
     private BackpackGridWidget _targetGrid;
     private PrepareViewModel _vm;
     private Canvas _canvas;
@@ -27,86 +29,107 @@ public class DragDropManager : MonoBehaviour
         _canvas = GetComponentInParent<Canvas>();
     }
 
-    /// <summary>开始拖拽（由 BackpackItemWidget 调用）</summary>
-    public void BeginDrag(BackpackItemWidget widget, PointerEventData eventData, PrepareViewModel vm, BackpackGridWidget grid)
+    // ====== 从物品栏拖拽（ItemData，未放置） ======
+
+    /// <summary>从物品栏开始拖拽一个新物品</summary>
+    public void BeginDragFromInventory(ItemData itemData, PrepareViewModel vm, BackpackGridWidget grid)
     {
-        _draggedItem = widget;
+        _isDragging = true;
+        DraggedItemData = itemData;
+        _draggedGridItem = null;
         _targetGrid = grid;
         _vm = vm;
+        CurrentRotation = 0;
 
-        // 从网格中移除
+        CreateGhost(itemData);
+    }
+
+    // ====== 从网格内拖拽（已放置物品） ======
+
+    public void BeginDragFromGrid(BackpackItemWidget widget, PrepareViewModel vm, BackpackGridWidget grid)
+    {
+        _isDragging = true;
+        _draggedGridItem = widget;
+        _targetGrid = grid;
+        _vm = vm;
+        DraggedItemData = widget.PlacedItem?.ItemData;
+        CurrentRotation = widget.PlacedItem?.Rotation ?? 0;
+
+        // 从网格中临时移除
         if (widget.PlacedItem != null)
             _vm.BagGrid.RemoveItem(widget.PlacedItem);
 
-        // 创建 Ghost
-        if (_ghostPrefab != null)
-        {
-            var ghostGo = Instantiate(_ghostPrefab.gameObject, _canvas.transform);
-            Ghost = ghostGo.GetComponent<DragGhostWidget>();
-            if (Ghost != null)
-                Ghost.Show(widget.PlacedItem?.ItemData, _targetGrid.CellSize);
-        }
+        CreateGhost(DraggedItemData);
     }
 
-    /// <summary>拖拽中（每帧 Update）</summary>
+    // ====== 帧更新 ======
+
     private void Update()
     {
-        if (!IsDragging || Ghost == null || _targetGrid == null) return;
+        if (!_isDragging || Ghost == null || _targetGrid == null) return;
 
         // Ghost 跟随鼠标
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _canvas.transform as RectTransform, Input.mousePosition, _canvas.worldCamera, out var localPos);
         Ghost.transform.localPosition = localPos;
 
-        // 检测放置位置
+        // 预览放置
         var cell = _targetGrid.ScreenToGrid(Input.mousePosition);
-        if (cell.HasValue && _draggedItem.PlacedItem != null)
+        if (cell.HasValue && DraggedItemData != null)
         {
-            bool valid = _vm.BagGrid.CanPlace(_draggedItem.PlacedItem.RotatedShape, cell.Value.x, cell.Value.y);
+            var shape = DraggedItemData.GetShape().Rotate(CurrentRotation);
+            bool valid = _vm.BagGrid.CanPlace(shape, cell.Value.x, cell.Value.y);
             Ghost.SetValid(valid);
-            Ghost.SnapToGrid(cell.Value, _targetGrid.CellSize);
         }
     }
 
-    /// <summary>结束拖拽</summary>
-    public void EndDrag(PointerEventData eventData)
+    // ====== 结束拖拽 ======
+
+    public void EndDrag()
     {
-        if (!IsDragging) return;
+        if (!_isDragging) return;
 
         var cell = _targetGrid?.ScreenToGrid(Input.mousePosition);
         bool placed = false;
 
-        if (cell.HasValue && _draggedItem.PlacedItem != null)
+        if (cell.HasValue && DraggedItemData != null)
         {
-            var item = _vm.BagGrid.PlaceItem(
-                _draggedItem.PlacedItem.ItemData,
-                cell.Value.x,
-                cell.Value.y,
-                _draggedItem.PlacedItem.Rotation);
-
-            placed = item != null;
+            var placedItem = _vm.BagGrid.PlaceItem(DraggedItemData, cell.Value.x, cell.Value.y, CurrentRotation);
+            placed = placedItem != null;
         }
 
-        if (!placed && _draggedItem.PlacedItem != null)
+        if (!placed && DraggedItemData != null)
         {
             // 放回物品栏
-            _vm.Inventory.Add(_draggedItem.PlacedItem.ItemData);
+            _vm.Inventory.Add(DraggedItemData);
         }
 
         // 清理
-        if (Ghost != null)
-            Destroy(Ghost.gameObject);
-
+        if (Ghost != null) Destroy(Ghost.gameObject);
         Ghost = null;
-        _draggedItem = null;
+        _draggedGridItem = null;
+        DraggedItemData = null;
+        _isDragging = false;
     }
 
-    /// <summary>旋转当前拖拽的物品</summary>
+    // ====== 旋转 ======
+
+    /// <summary>旋转当前拖拽的物品（右键/双指）</summary>
     public void RotateDraggedItem()
     {
-        if (_draggedItem?.PlacedItem == null) return;
-        _draggedItem.PlacedItem.SetRotation(_draggedItem.PlacedItem.Rotation + 1);
+        if (!_isDragging || DraggedItemData == null) return;
+        CurrentRotation = (CurrentRotation + 1) % 4;
         if (Ghost != null)
-            Ghost.RefreshShape(_draggedItem.PlacedItem.ItemData, _draggedItem.PlacedItem.Rotation);
+            Ghost.RefreshShape(DraggedItemData, CurrentRotation);
+    }
+
+    // ====== 辅助 ======
+
+    private void CreateGhost(ItemData data)
+    {
+        if (_ghostPrefab == null || _canvas == null) return;
+        var ghostGo = Instantiate(_ghostPrefab.gameObject, _canvas.transform);
+        Ghost = ghostGo.GetComponent<DragGhostWidget>();
+        Ghost?.Show(data, _targetGrid != null ? _targetGrid.CellSize : 64f);
     }
 }

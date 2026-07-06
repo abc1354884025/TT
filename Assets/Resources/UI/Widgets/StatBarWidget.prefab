@@ -53,9 +53,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2beb09a404223944ca5d15a16ec98b3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _icon: {fileID: 0}
+  _icon: {fileID: 2605846296964053343}
   _label: {fileID: 8671268906614435966}
-  _valueText: {fileID: 0}
+  _valueText: {fileID: 8458884583010872883}
 --- !u!222 &2293972086093649345
 CanvasRenderer:
   m_ObjectHideFlags: 0

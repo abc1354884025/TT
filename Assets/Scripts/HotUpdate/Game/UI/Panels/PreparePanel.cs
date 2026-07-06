@@ -137,10 +137,7 @@ public class PreparePanel : UIPanel
     private void OnInventoryCellInit(GameObject cell)
     {
         if (!cell.GetComponent<InventoryItemWidget>())
-        {
-            var widget = cell.AddComponent<InventoryItemWidget>();
-            widget.OnClicked += OnItemClick;
-        }
+            cell.AddComponent<InventoryItemWidget>();
     }
 
     private void OnInventoryCellUpdate(int index, GameObject cell)
@@ -148,7 +145,30 @@ public class PreparePanel : UIPanel
         if (_lastInventoryItems == null || index >= _lastInventoryItems.Count) return;
         var item = _lastInventoryItems[index];
         var widget = cell.GetComponent<InventoryItemWidget>();
-        if (widget) widget.Init(item);
+        if (!widget) return;
+
+        widget.Init(item);
+        // 订阅拖拽事件
+        widget.OnBeginDragItem -= OnInventoryDragStart;
+        widget.OnBeginDragItem += OnInventoryDragStart;
+        widget.OnEndDragItem -= OnInventoryDragEnd;
+        widget.OnEndDragItem += OnInventoryDragEnd;
+    }
+
+    private void OnInventoryDragStart(ItemData item)
+    {
+        // 从物品栏移除
+        _vm.Inventory.Remove(item);
+        RefreshInventoryUI();
+
+        if (DragDropManager.Instance != null)
+            DragDropManager.Instance.BeginDragFromInventory(item, _vm, _gridWidget);
+    }
+
+    private void OnInventoryDragEnd()
+    {
+        DragDropManager.Instance?.EndDrag();
+        RefreshInventoryUI();
     }
 
     #endregion
