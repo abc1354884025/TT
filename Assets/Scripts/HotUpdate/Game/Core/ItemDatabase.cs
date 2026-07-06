@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TTSDK.UNBridgeLib.LitJson;
 
 /// <summary>
 /// 物品数据库。从 JSON 加载所有物品定义。
@@ -18,7 +19,7 @@ public static class ItemDatabase
     /// <summary>从 JSON 文本加载物品（可在运行时热更调用）</summary>
     public static void LoadFromJson(string json)
     {
-        var wrapper = LitJson.JsonMapper.ToObject<ItemListWrapper>(json);
+        var wrapper = JsonMapper.ToObject<ItemListWrapper>(json);
         _items = new Dictionary<string, ItemData>();
         _itemList = new List<ItemData>();
 
