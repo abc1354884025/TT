@@ -215,8 +215,9 @@ public class PreparePanel : UIPanel
 
     private void OnStartBattle()
     {
+        var vm = _vm; // 先存引用，Close 会把 _vm 置 null
         UIManager.Instance.Close(this);
-        UIManager.Instance.Open("BattlePanel", _vm);
+        UIManager.Instance.Open("BattlePanel", vm);
     }
 
     private void OnBack()
