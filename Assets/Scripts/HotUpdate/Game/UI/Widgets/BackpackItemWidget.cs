@@ -1,63 +1,80 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 背包网格中的物品渲染器。
-/// 根据 PlacedItem 的形状和位置渲染成彩色方块组。
-/// Phase 2 仅静态渲染，Phase 3 加拖拽。
+/// 背包网格中的物品渲染器——支持点击拖拽移动位置。
 /// </summary>
-public class BackpackItemWidget : MonoBehaviour
+public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] private Image _background;
     [SerializeField] private RarityBadgeWidget _rarityBadge;
 
     public PlacedItem PlacedItem { get; private set; }
+    private BackpackGridWidget _grid;
+    private PrepareViewModel _vm;
 
-    /// <summary>初始化物品显示</summary>
-    public void Init(PlacedItem placedItem, float cellSize)
+    public void Init(PlacedItem placedItem, float cellSize, BackpackGridWidget grid = null, PrepareViewModel vm = null)
     {
         PlacedItem = placedItem;
-        var shape = placedItem.RotatedShape;
+        _grid = grid;
+        _vm = vm;
 
-        // 调整自身 RectTransform 覆盖形状所有格子
+        var shape = placedItem.RotatedShape;
         var rt = GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(shape.Width * cellSize, shape.Height * cellSize);
-        rt.pivot = new Vector2(0, 1); // 左上锚点
+        rt.pivot = new Vector2(0, 1);
 
         if (_background)
             _background.color = GetColorByRarity(placedItem.ItemData.Rarity);
-
         if (_rarityBadge)
             _rarityBadge.SetRarity(placedItem.ItemData.Rarity);
 
-        // 按形状裁剪 Image（用 Mask 或直接调整子图）
-        // 简单方案：在子 Grid 中生成小块
         RenderShapeBlocks(shape, cellSize);
     }
 
     private void RenderShapeBlocks(ItemShape shape, float cellSize)
     {
-        // 为形状的每个格子创建一个彩色小块
+        foreach (Transform child in transform) Destroy(child.gameObject);
+
         for (int sx = 0; sx < shape.Width; sx++)
         {
             for (int sy = 0; sy < shape.Height; sy++)
             {
                 if (!shape.Cells[sx, sy]) continue;
-
                 var block = new GameObject("Cell", typeof(Image));
                 block.transform.SetParent(transform, false);
-                var img = block.GetComponent<Image>();
-                img.color = _background ? _background.color : Color.white;
+                block.GetComponent<Image>().color = _background ? _background.color : Color.white;
+                block.GetComponent<Image>().raycastTarget = false;
 
                 var rt = block.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0, 1);
-                rt.anchorMax = new Vector2(0, 1);
+                rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(0, 1);
                 rt.pivot = new Vector2(0, 1);
                 rt.anchoredPosition = new Vector2(sx * cellSize, -sy * cellSize);
                 rt.sizeDelta = new Vector2(cellSize, cellSize);
             }
         }
     }
+
+    // ====== 拖拽 ======
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (PlacedItem == null || DragDropManager.Instance == null) return;
+        if (_grid == null) _grid = GetComponentInParent<BackpackGridWidget>();
+        if (_vm == null) _vm = FindObjectOfType<PreparePanel>()?.GetComponent<PrepareViewModel>();
+
+        DragDropManager.Instance.BeginDragFromGrid(this, _vm, _grid);
+    }
+
+    public void OnDrag(PointerEventData eventData) { }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        DragDropManager.Instance?.EndDrag();
+    }
+
+    // ====== 辅助 ======
 
     private Color GetColorByRarity(ItemRarity rarity)
     {

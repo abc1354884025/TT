@@ -49,6 +49,7 @@ public class PreparePanel : UIPanel
             go.transform.SetParent(transform.root, false);
             go.AddComponent<DragDropManager>();
         }
+        DragDropManager.Instance.OnDragFinished += OnAnyDragFinished;
 
         _vm = new PrepareViewModel();
 
@@ -94,6 +95,9 @@ public class PreparePanel : UIPanel
 
     protected override void OnClose()
     {
+        if (DragDropManager.Instance != null)
+            DragDropManager.Instance.OnDragFinished -= OnAnyDragFinished;
+
         foreach (var u in _unbind) u.Invoke();
         _unbind.Clear();
 
@@ -175,7 +179,11 @@ public class PreparePanel : UIPanel
     private void OnInventoryDragEnd()
     {
         DragDropManager.Instance?.EndDrag();
-        // 拖拽结束后统一刷新（放置成功=物品已在网格，失败=已加回 inventory）
+    }
+
+    /// <summary>任何拖拽结束后统一刷新物品栏</summary>
+    private void OnAnyDragFinished()
+    {
         RefreshInventoryUI();
     }
 
@@ -223,22 +231,6 @@ public class PreparePanel : UIPanel
     {
         _vm.RefreshShop();
         RefreshShopUI();
-    }
-
-    private void OnItemClick(ItemData item)
-    {
-        for (int y = 0; y < _vm.BagGrid.Height; y++)
-        {
-            for (int x = 0; x < _vm.BagGrid.Width; x++)
-            {
-                if (_vm.TryPlaceItem(item, x, y))
-                {
-                    RefreshInventoryUI();
-                    return;
-                }
-            }
-        }
-        Debug.LogWarning($"[PreparePanel] 无法放置 {item.Name}，背包已满？");
     }
 
     private void OnStartBattle()

@@ -10,6 +10,9 @@ public class DragDropManager : MonoBehaviour
 {
     public static DragDropManager Instance { get; private set; }
 
+    /// <summary>拖拽结束后触发（由 PreparePanel 订阅来刷新 UI）</summary>
+    public event System.Action OnDragFinished;
+
     [SerializeField] private DragGhostWidget _ghostPrefab;
 
     public bool IsDragging => _isDragging;
@@ -55,7 +58,10 @@ public class DragDropManager : MonoBehaviour
         DraggedItemData = widget.PlacedItem?.ItemData;
         CurrentRotation = widget.PlacedItem?.Rotation ?? 0;
 
-        // 从网格中临时移除
+        // 先把 Widget 移到 Canvas 下，避免 RefreshItems 销毁它
+        if (_canvas != null) widget.transform.SetParent(_canvas.transform, true);
+
+        // 从网格中移除（会触发 RefreshItems，但 Widget 已不在 grid 子节点中，不会被销毁）
         if (widget.PlacedItem != null)
             _vm.BagGrid.RemoveItem(widget.PlacedItem);
 
@@ -115,9 +121,15 @@ public class DragDropManager : MonoBehaviour
 
         if (Ghost != null) Destroy(Ghost.gameObject);
         Ghost = null;
+
+        // 从网格拖出的 Widget 不再需要（放置成功会由 RefreshItems 重建，失败则回到物品栏）
+        if (_draggedGridItem != null) Destroy(_draggedGridItem.gameObject);
+
         _draggedGridItem = null;
         DraggedItemData = null;
         _isDragging = false;
+
+        OnDragFinished?.Invoke();
     }
 
     // ====== 旋转 ======

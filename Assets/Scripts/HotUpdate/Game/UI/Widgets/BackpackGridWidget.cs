@@ -84,7 +84,7 @@ public class BackpackGridWidget : MonoBehaviour
             var go = Instantiate(_itemWidgetPrefab, transform);
             var widget = go.GetComponent<BackpackItemWidget>();
             if (!widget) widget = go.AddComponent<BackpackItemWidget>();
-            widget.Init(placedItem, _cellSize);
+            widget.Init(placedItem, _cellSize, this);
 
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(0, 1);
