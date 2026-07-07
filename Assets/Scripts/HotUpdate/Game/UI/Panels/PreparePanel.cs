@@ -42,6 +42,14 @@ public class PreparePanel : UIPanel
 
     protected override void OnOpen(object data)
     {
+        // 确保 DragDropManager 存在
+        if (DragDropManager.Instance == null)
+        {
+            var go = new GameObject("[DragDropManager]");
+            go.transform.SetParent(transform.root, false);
+            go.AddComponent<DragDropManager>();
+        }
+
         _vm = new PrepareViewModel();
 
         // 绑定属性栏

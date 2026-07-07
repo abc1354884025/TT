@@ -127,9 +127,20 @@ public class DragDropManager : MonoBehaviour
 
     private void CreateGhost(ItemData data)
     {
-        if (_ghostPrefab == null || _canvas == null) return;
-        var ghostGo = Instantiate(_ghostPrefab.gameObject, _canvas.transform);
+        if (_canvas == null || data == null) return;
+
+        GameObject ghostGo;
+        if (_ghostPrefab != null)
+            ghostGo = Instantiate(_ghostPrefab.gameObject, _canvas.transform);
+        else
+        {
+            // 没有预制体时自动创建一个哑元 Ghost
+            ghostGo = new GameObject("DragGhost", typeof(RectTransform), typeof(DragGhostWidget));
+            ghostGo.transform.SetParent(_canvas.transform, false);
+        }
+
         Ghost = ghostGo.GetComponent<DragGhostWidget>();
-        Ghost?.Show(data, _targetGrid != null ? _targetGrid.CellSize : 64f);
+        float cellSize = _targetGrid != null ? _targetGrid.CellSize : 64f;
+        Ghost.Show(data, cellSize);
     }
 }

@@ -50,8 +50,10 @@ public class InventoryItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandle
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (ItemData != null)
-            OnBeginDragItem?.Invoke(ItemData);
+        if (ItemData == null) return;
+        // 禁用父 ScrollRect 滚动，避免拖拽被拦截
+        DisableParentScroll(true);
+        OnBeginDragItem?.Invoke(ItemData);
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -61,6 +63,13 @@ public class InventoryItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandle
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        DisableParentScroll(false);
         OnEndDragItem?.Invoke();
+    }
+
+    private void DisableParentScroll(bool disable)
+    {
+        var sr = GetComponentInParent<ScrollRect>();
+        if (sr) sr.enabled = !disable;
     }
 }
