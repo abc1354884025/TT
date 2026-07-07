@@ -165,9 +165,8 @@ public class PreparePanel : UIPanel
 
     private void OnInventoryDragStart(ItemData item)
     {
-        // 从物品栏移除
+        // 只从数据中移除，不刷新 UI（否则 LoopScrollView 会回收拖拽中的 Cell）
         _vm.Inventory.Remove(item);
-        RefreshInventoryUI();
 
         if (DragDropManager.Instance != null)
             DragDropManager.Instance.BeginDragFromInventory(item, _vm, _gridWidget);
@@ -176,6 +175,7 @@ public class PreparePanel : UIPanel
     private void OnInventoryDragEnd()
     {
         DragDropManager.Instance?.EndDrag();
+        // 拖拽结束后统一刷新（放置成功=物品已在网格，失败=已加回 inventory）
         RefreshInventoryUI();
     }
 
