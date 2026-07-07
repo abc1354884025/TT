@@ -14,6 +14,17 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
     private BackpackGridWidget _grid;
     private PrepareViewModel _vm;
 
+    private void Awake()
+    {
+        // 确保有接收射线的大背景，否则拖拽事件不会触发
+        if (!_background)
+        {
+            _background = gameObject.AddComponent<Image>();
+            _background.color = new Color(1, 1, 1, 0.01f); // 几乎透明但可接收射线
+        }
+        _background.raycastTarget = true;
+    }
+
     public void Init(PlacedItem placedItem, float cellSize, BackpackGridWidget grid = null, PrepareViewModel vm = null)
     {
         PlacedItem = placedItem;
