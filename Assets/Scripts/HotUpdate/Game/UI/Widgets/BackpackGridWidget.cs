@@ -49,6 +49,7 @@ public class BackpackGridWidget : MonoBehaviour
         var bgGo = new GameObject("GridBg", typeof(Image));
         bgGo.transform.SetParent(transform, false);
         bgGo.GetComponent<Image>().color = _cellColorA;
+        bgGo.GetComponent<Image>().raycastTarget = false;
         var bgRt = bgGo.GetComponent<RectTransform>();
         bgRt.anchorMin = Vector2.zero; bgRt.anchorMax = Vector2.one;
         bgRt.offsetMin = Vector2.zero; bgRt.offsetMax = Vector2.zero;

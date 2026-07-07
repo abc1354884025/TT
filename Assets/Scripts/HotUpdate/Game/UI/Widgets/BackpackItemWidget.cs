@@ -66,6 +66,7 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
 
     public void OnBeginDrag(PointerEventData eventData)
     {
+        Debug.Log($"[GridItem] OnBeginDrag item={PlacedItem?.ItemData?.Name}, vm={_vm != null}, ddm={DragDropManager.Instance != null}");
         if (PlacedItem == null || DragDropManager.Instance == null) return;
         if (_grid == null) _grid = GetComponentInParent<BackpackGridWidget>();
 
