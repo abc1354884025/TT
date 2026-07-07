@@ -62,7 +62,7 @@ public class DragDropManager : MonoBehaviour
         if (_canvas != null) widget.transform.SetParent(_canvas.transform, true);
 
         // 从网格中移除（会触发 RefreshItems，但 Widget 已不在 grid 子节点中，不会被销毁）
-        if (widget.PlacedItem != null)
+        if (widget.PlacedItem != null && _vm != null)
             _vm.BagGrid.RemoveItem(widget.PlacedItem);
 
         CreateGhost(DraggedItemData);
@@ -105,18 +105,18 @@ public class DragDropManager : MonoBehaviour
 
         _targetGrid?.ClearPreview();
 
-        var cell = _targetGrid?.ScreenToGrid(Input.mousePosition);
-        bool placed = false;
-
-        if (cell.HasValue && DraggedItemData != null)
+        if (_vm != null && DraggedItemData != null)
         {
-            var placedItem = _vm.BagGrid.PlaceItem(DraggedItemData, cell.Value.x, cell.Value.y, CurrentRotation);
-            placed = placedItem != null;
-        }
-
-        if (!placed && DraggedItemData != null)
-        {
-            _vm.Inventory.Add(DraggedItemData);
+            var cell = _targetGrid?.ScreenToGrid(Input.mousePosition);
+            if (cell.HasValue)
+            {
+                _vm.BagGrid.PlaceItem(DraggedItemData, cell.Value.x, cell.Value.y, CurrentRotation);
+            }
+            else
+            {
+                // 拖到网格外 → 退回物品栏
+                _vm.Inventory.Add(DraggedItemData);
+            }
         }
 
         if (Ghost != null) Destroy(Ghost.gameObject);
