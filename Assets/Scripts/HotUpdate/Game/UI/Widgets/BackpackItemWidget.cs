@@ -19,6 +19,7 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
         PlacedItem = placedItem;
         _grid = grid;
         _vm = vm;
+        Debug.Log($"[GridItem] Init {placedItem.ItemData.Name} @ ({placedItem.GridX},{placedItem.GridY}), hasBg={_background != null}, hasImg={GetComponent<Image>() != null}");
 
         var shape = placedItem.RotatedShape;
         var rt = GetComponent<RectTransform>();
