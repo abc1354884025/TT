@@ -108,16 +108,20 @@ public class DragDropManager : MonoBehaviour
         if (_vm != null && DraggedItemData != null)
         {
             var cell = _targetGrid?.ScreenToGrid(Input.mousePosition);
-            bool placed = false;
             if (cell.HasValue)
             {
-                placed = _vm.BagGrid.PlaceItem(DraggedItemData, cell.Value.x, cell.Value.y, CurrentRotation) != null;
+                var result = _vm.BagGrid.PlaceItem(DraggedItemData, cell.Value.x, cell.Value.y, CurrentRotation);
+                if (result == null)
+                    _vm.Inventory.Add(DraggedItemData); // 放不下，回物品栏
             }
-            if (!placed)
+            else
             {
-                // 拖到网格外或放置失败 → 退回物品栏
-                _vm.Inventory.Add(DraggedItemData);
+                _vm.Inventory.Add(DraggedItemData); // 拖到网格外，回物品栏
             }
+        }
+        else
+        {
+            Debug.LogWarning($"[DragDropManager] EndDrag 跳过: _vm={_vm != null}, item={DraggedItemData != null}");
         }
 
         if (Ghost != null) Destroy(Ghost.gameObject);
