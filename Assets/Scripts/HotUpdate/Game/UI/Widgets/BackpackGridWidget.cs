@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 背包网格渲染器——核心 UI Widget。
-/// 负责绘制网格线、管理物品实例、坐标转换。
+/// 负责绘制网格背景、管理物品实例、坐标转换、拖拽预览高亮。
 /// </summary>
 public class BackpackGridWidget : MonoBehaviour
 {
@@ -12,19 +12,18 @@ public class BackpackGridWidget : MonoBehaviour
     [SerializeField] private float _cellSize = 64f;
     [SerializeField] private Color _cellColorA = new Color(0.2f, 0.2f, 0.25f);
     [SerializeField] private Color _cellColorB = new Color(0.25f, 0.25f, 0.30f);
-    [SerializeField] private Color _cellBorderColor = new Color(0.15f, 0.15f, 0.18f);
 
-    [Header("高亮")]
-    [SerializeField] private GameObject _highlightPrefab; // 绿色/红色高亮方块（可选）
+    [Header("预览")]
+    [SerializeField] private Color _validColor = new Color(0, 1, 0, 0.3f);
+    [SerializeField] private Color _invalidColor = new Color(1, 0, 0, 0.3f);
 
-    /// <summary>物品 Prefab（BackpackItemWidget 挂载的 Prefab）</summary>
+    /// <summary>物品 Prefab</summary>
     [SerializeField] private GameObject _itemWidgetPrefab;
 
     private BagGrid _grid;
     private RectTransform _rectTransform;
     private List<BackpackItemWidget> _itemWidgets = new List<BackpackItemWidget>();
-    private List<GameObject> _cellHighlights = new List<GameObject>();
-    private ObjectPool<GameObject> _highlightPool;
+    private List<GameObject> _previewHighlights = new List<GameObject>();
 
     public float CellSize => _cellSize;
 
@@ -33,7 +32,6 @@ public class BackpackGridWidget : MonoBehaviour
         _rectTransform = GetComponent<RectTransform>();
     }
 
-    /// <summary>绑定网格数据并绘制</summary>
     public void Bind(BagGrid grid)
     {
         _grid = grid;
@@ -42,20 +40,17 @@ public class BackpackGridWidget : MonoBehaviour
         RefreshItems();
     }
 
-    /// <summary>绘制棋盘格背景</summary>
+    // ====== 绘制背景 ======
+
     private void DrawGridBackground()
     {
         var bgGo = new GameObject("GridBg", typeof(Image));
         bgGo.transform.SetParent(transform, false);
-        var bgImg = bgGo.GetComponent<Image>();
-        bgImg.color = _cellColorA;
+        bgGo.GetComponent<Image>().color = _cellColorA;
         var bgRt = bgGo.GetComponent<RectTransform>();
-        bgRt.anchorMin = Vector2.zero;
-        bgRt.anchorMax = Vector2.one;
-        bgRt.offsetMin = Vector2.zero;
-        bgRt.offsetMax = Vector2.zero;
+        bgRt.anchorMin = Vector2.zero; bgRt.anchorMax = Vector2.one;
+        bgRt.offsetMin = Vector2.zero; bgRt.offsetMax = Vector2.zero;
 
-        // 绘制交替色格子和边框
         for (int x = 0; x < _grid.Width; x++)
         {
             for (int y = 0; y < _grid.Height; y++)
@@ -67,8 +62,7 @@ public class BackpackGridWidget : MonoBehaviour
                 img.raycastTarget = false;
 
                 var rt = cell.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0, 1);
-                rt.anchorMax = new Vector2(0, 1);
+                rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(0, 1);
                 rt.pivot = new Vector2(0, 1);
                 rt.anchoredPosition = new Vector2(x * _cellSize, -y * _cellSize);
                 rt.sizeDelta = new Vector2(_cellSize, _cellSize);
@@ -76,72 +70,94 @@ public class BackpackGridWidget : MonoBehaviour
         }
     }
 
-    /// <summary>刷新所有物品 Widget</summary>
+    // ====== 物品 ======
+
     private void RefreshItems()
     {
-        // 清除旧 Widget
-        foreach (var w in _itemWidgets)
-            Destroy(w.gameObject);
+        foreach (var w in _itemWidgets) Destroy(w.gameObject);
         _itemWidgets.Clear();
-
         if (_grid == null) return;
 
-        // 创建新 Widget
         foreach (var placedItem in _grid.Items)
         {
-            if (_itemWidgetPrefab == null)
-            {
-                Debug.LogError("[BackpackGridWidget] 未设置 ItemWidgetPrefab");
-                return;
-            }
-
+            if (_itemWidgetPrefab == null) return;
             var go = Instantiate(_itemWidgetPrefab, transform);
             var widget = go.GetComponent<BackpackItemWidget>();
-            if (widget == null)
-                widget = go.AddComponent<BackpackItemWidget>();
-
+            if (!widget) widget = go.AddComponent<BackpackItemWidget>();
             widget.Init(placedItem, _cellSize);
 
-            // 定位到格子位置
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0, 1);
-            rt.anchorMax = new Vector2(0, 1);
+            rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(0, 1);
             rt.pivot = new Vector2(0, 1);
             rt.anchoredPosition = new Vector2(placedItem.GridX * _cellSize, -placedItem.GridY * _cellSize);
-
             _itemWidgets.Add(widget);
         }
     }
 
-    /// <summary>屏幕坐标转格子坐标</summary>
+    // ====== 拖拽预览高亮 ======
+
+    /// <summary>显示放置预览（绿色/红色格子高亮）</summary>
+    public void ShowPlacementPreview(ItemShape shape, int gx, int gy, bool valid)
+    {
+        ClearPreview();
+        if (shape == null || _grid == null) return;
+
+        Color color = valid ? _validColor : _invalidColor;
+
+        for (int sx = 0; sx < shape.Width; sx++)
+        {
+            for (int sy = 0; sy < shape.Height; sy++)
+            {
+                if (!shape.Cells[sx, sy]) continue;
+                int cx = gx + sx, cy = gy + sy;
+                if (cx < 0 || cx >= _grid.Width || cy < 0 || cy >= _grid.Height) continue;
+
+                var go = new GameObject("Preview", typeof(Image));
+                go.transform.SetParent(transform, false);
+                go.GetComponent<Image>().color = color;
+                go.GetComponent<Image>().raycastTarget = false;
+
+                var rt = go.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(0, 1);
+                rt.pivot = new Vector2(0, 1);
+                rt.anchoredPosition = new Vector2(cx * _cellSize, -cy * _cellSize);
+                rt.sizeDelta = new Vector2(_cellSize, _cellSize);
+
+                _previewHighlights.Add(go);
+            }
+        }
+    }
+
+    /// <summary>清除预览高亮</summary>
+    public void ClearPreview()
+    {
+        foreach (var go in _previewHighlights) Destroy(go);
+        _previewHighlights.Clear();
+    }
+
+    // ====== 坐标 ======
+
     public Vector2Int? ScreenToGrid(Vector2 screenPoint)
     {
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _rectTransform, screenPoint, null, out var localPoint);
 
-        // 以左上为原点
         float relX = localPoint.x - _rectTransform.rect.xMin;
         float relY = _rectTransform.rect.yMax - localPoint.y;
 
         int gx = Mathf.FloorToInt(relX / _cellSize);
         int gy = Mathf.FloorToInt(relY / _cellSize);
-
         if (_grid == null) return new Vector2Int(gx, gy);
-
         if (gx >= 0 && gx < _grid.Width && gy >= 0 && gy < _grid.Height)
             return new Vector2Int(gx, gy);
         return null;
     }
 
-    /// <summary>格子坐标转世界坐标（物品放置锚点）</summary>
     public Vector2 GridToAnchoredPosition(int gx, int gy)
-    {
-        return new Vector2(gx * _cellSize, -gy * _cellSize);
-    }
+        => new Vector2(gx * _cellSize, -gy * _cellSize);
 
     private void OnDestroy()
     {
-        if (_grid != null)
-            _grid.OnChanged -= RefreshItems;
+        if (_grid != null) _grid.OnChanged -= RefreshItems;
     }
 }

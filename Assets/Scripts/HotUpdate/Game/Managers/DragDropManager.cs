@@ -66,12 +66,15 @@ public class DragDropManager : MonoBehaviour
 
     private void Update()
     {
-        if (!_isDragging || Ghost == null || _targetGrid == null) return;
+        if (!_isDragging || _targetGrid == null) return;
 
         // Ghost 跟随鼠标
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _canvas.transform as RectTransform, Input.mousePosition, _canvas.worldCamera, out var localPos);
-        Ghost.transform.localPosition = localPos;
+        if (Ghost != null && _canvas != null)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                _canvas.transform as RectTransform, Input.mousePosition, _canvas.worldCamera, out var localPos);
+            Ghost.transform.localPosition = localPos;
+        }
 
         // 预览放置
         var cell = _targetGrid.ScreenToGrid(Input.mousePosition);
@@ -79,7 +82,12 @@ public class DragDropManager : MonoBehaviour
         {
             var shape = DraggedItemData.GetShape().Rotate(CurrentRotation);
             bool valid = _vm.BagGrid.CanPlace(shape, cell.Value.x, cell.Value.y);
-            Ghost.SetValid(valid);
+            Ghost?.SetValid(valid);
+            _targetGrid.ShowPlacementPreview(shape, cell.Value.x, cell.Value.y, valid);
+        }
+        else
+        {
+            _targetGrid.ClearPreview();
         }
     }
 
@@ -88,6 +96,8 @@ public class DragDropManager : MonoBehaviour
     public void EndDrag()
     {
         if (!_isDragging) return;
+
+        _targetGrid?.ClearPreview();
 
         var cell = _targetGrid?.ScreenToGrid(Input.mousePosition);
         bool placed = false;
@@ -100,11 +110,9 @@ public class DragDropManager : MonoBehaviour
 
         if (!placed && DraggedItemData != null)
         {
-            // 放回物品栏
             _vm.Inventory.Add(DraggedItemData);
         }
 
-        // 清理
         if (Ghost != null) Destroy(Ghost.gameObject);
         Ghost = null;
         _draggedGridItem = null;
