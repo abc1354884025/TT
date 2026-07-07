@@ -32,13 +32,11 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
 
         RenderShapeBlocks(shape, cellSize);
 
-        // 最后加一个透明大背景接收射线，确保拖拽事件能触发
+        // 确保有 Image 接收射线（预制体通常已有，没有则取现有组件）
         if (!_background)
-        {
-            _background = gameObject.AddComponent<Image>();
-            _background.color = new Color(1, 1, 1, 0.1f);
-        }
-        _background.raycastTarget = true;
+            _background = GetComponent<Image>();
+        if (_background)
+            _background.raycastTarget = true;
     }
 
     private void RenderShapeBlocks(ItemShape shape, float cellSize)
