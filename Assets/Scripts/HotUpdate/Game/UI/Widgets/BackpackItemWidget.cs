@@ -70,6 +70,7 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        Debug.Log($"[BackpackItemWidget] OnEndDrag 触发, item={PlacedItem?.ItemData?.Name}");
         DragDropManager.Instance?.EndDrag();
     }
 
