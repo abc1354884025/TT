@@ -75,6 +75,12 @@ public class BackpackGridWidget : MonoBehaviour
 
     // ====== 物品 ======
 
+    /// <summary>从列表中移除 Widget 但不销毁（拖拽时用）</summary>
+    public void DetachWidget(BackpackItemWidget widget)
+    {
+        _itemWidgets.Remove(widget);
+    }
+
     private void RefreshItems()
     {
         foreach (var w in _itemWidgets) Destroy(w.gameObject);

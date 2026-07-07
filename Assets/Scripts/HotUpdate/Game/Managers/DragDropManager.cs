@@ -58,10 +58,11 @@ public class DragDropManager : MonoBehaviour
         DraggedItemData = widget.PlacedItem?.ItemData;
         CurrentRotation = widget.PlacedItem?.Rotation ?? 0;
 
-        // 先把 Widget 移到 Canvas 下，避免 RefreshItems 销毁它
+        // 先把 Widget 移出 grid 管理，避免 RefreshItems 销毁它
+        _targetGrid.DetachWidget(widget);
         if (_canvas != null) widget.transform.SetParent(_canvas.transform, true);
 
-        // 从网格中移除（会触发 RefreshItems，但 Widget 已不在 grid 子节点中，不会被销毁）
+        // 从网格中移除（触发 RefreshItems，但 Widget 已从列表中移除，不会被销毁）
         if (widget.PlacedItem != null && _vm != null)
             _vm.BagGrid.RemoveItem(widget.PlacedItem);
 
