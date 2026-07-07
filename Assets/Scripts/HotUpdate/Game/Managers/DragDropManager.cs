@@ -108,15 +108,22 @@ public class DragDropManager : MonoBehaviour
         if (_vm != null && DraggedItemData != null)
         {
             var cell = _targetGrid?.ScreenToGrid(Input.mousePosition);
+            Debug.Log($"[EndDrag] cell={cell}, curRot={CurrentRotation}");
             if (cell.HasValue)
             {
                 var result = _vm.BagGrid.PlaceItem(DraggedItemData, cell.Value.x, cell.Value.y, CurrentRotation);
-                if (result == null)
-                    _vm.Inventory.Add(DraggedItemData); // 放不下，回物品栏
+                if (result != null)
+                    Debug.Log($"[EndDrag] 放置成功 @ ({cell.Value.x},{cell.Value.y})");
+                else
+                {
+                    Debug.Log($"[EndDrag] 放置失败，退回物品栏");
+                    _vm.Inventory.Add(DraggedItemData);
+                }
             }
             else
             {
-                _vm.Inventory.Add(DraggedItemData); // 拖到网格外，回物品栏
+                Debug.Log("[EndDrag] 拖到网格外，退回物品栏");
+                _vm.Inventory.Add(DraggedItemData);
             }
         }
         else
