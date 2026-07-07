@@ -24,6 +24,7 @@ public class BackpackGridWidget : MonoBehaviour
     private RectTransform _rectTransform;
     private List<BackpackItemWidget> _itemWidgets = new List<BackpackItemWidget>();
     private List<GameObject> _previewHighlights = new List<GameObject>();
+    private PrepareViewModel _vm;
 
     public float CellSize => _cellSize;
 
@@ -32,9 +33,10 @@ public class BackpackGridWidget : MonoBehaviour
         _rectTransform = GetComponent<RectTransform>();
     }
 
-    public void Bind(BagGrid grid)
+    public void Bind(BagGrid grid, PrepareViewModel vm = null)
     {
         _grid = grid;
+        _vm = vm;
         _grid.OnChanged += RefreshItems;
         DrawGridBackground();
         RefreshItems();
@@ -84,7 +86,7 @@ public class BackpackGridWidget : MonoBehaviour
             var go = Instantiate(_itemWidgetPrefab, transform);
             var widget = go.GetComponent<BackpackItemWidget>();
             if (!widget) widget = go.AddComponent<BackpackItemWidget>();
-            widget.Init(placedItem, _cellSize, this);
+            widget.Init(placedItem, _cellSize, this, _vm);
 
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(0, 1);

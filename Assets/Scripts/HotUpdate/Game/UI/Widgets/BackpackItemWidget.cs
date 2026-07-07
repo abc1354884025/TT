@@ -62,7 +62,6 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
     {
         if (PlacedItem == null || DragDropManager.Instance == null) return;
         if (_grid == null) _grid = GetComponentInParent<BackpackGridWidget>();
-        if (_vm == null) _vm = FindObjectOfType<PreparePanel>()?.GetComponent<PrepareViewModel>();
 
         DragDropManager.Instance.BeginDragFromGrid(this, _vm, _grid);
     }

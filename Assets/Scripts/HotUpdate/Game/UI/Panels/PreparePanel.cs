@@ -62,7 +62,7 @@ public class PreparePanel : UIPanel
         _unbind.Add(_roundText.BindTo(_vm.Round));
 
         // 背包网格
-        if (_gridWidget) _gridWidget.Bind(_vm.BagGrid);
+        if (_gridWidget) _gridWidget.Bind(_vm.BagGrid, _vm);
 
         // 属性面板实时更新
         _vm.CurrentStats.OnChanged += OnStatsChanged;
