@@ -29,6 +29,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator InitSequence()
     {
+        SaveManager.Load();
         ConfigLoader.LoadAll();
         UIManager.Instance.SetHotUpdateAssembly(typeof(GameManager).Assembly);
 
