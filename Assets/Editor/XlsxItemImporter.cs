@@ -154,6 +154,9 @@ public class XlsxItemImporter : EditorWindow
         }
 
         Debug.Log($"[XLSX] 解析到 {result.Count} 行（含表头），首行 {result[0].Count} 列");
+        // 打印前 3 行数据用于调试
+        for (int d = 0; d < Math.Min(3, result.Count); d++)
+            Debug.Log($"[XLSX] 行{d}: [{string.Join(" | ", result[d])}]");
         return result;
     }
 
