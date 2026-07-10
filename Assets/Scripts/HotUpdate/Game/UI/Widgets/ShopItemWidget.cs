@@ -19,6 +19,7 @@ public class ShopItemWidget : MonoBehaviour
     private void Awake()
     {
         // 自动查找（优先 Inspector 拖拽的值）
+        if (!_icon) _icon = transform.Find("Icon")?.GetComponent<Image>();
         if (!_nameText) _nameText = transform.Find("NameText")?.GetComponent<Text>();
         if (!_priceText) _priceText = transform.Find("PriceText")?.GetComponent<Text>();
         if (!_buyButton) _buyButton = GetComponent<Button>();
@@ -30,6 +31,8 @@ public class ShopItemWidget : MonoBehaviour
         ItemData = data;
         if (_nameText) _nameText.text = data.Name;
         if (_priceText) _priceText.text = $"{data.BuyPrice}G";
+        if (_icon && !string.IsNullOrEmpty(data.IconPath))
+            _icon.sprite = Resources.Load<Sprite>(data.IconPath);
         if (_rarityBadge) _rarityBadge.SetRarity(data.Rarity);
         if (_buyButton)
         {

@@ -33,7 +33,24 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
 
         RenderShapeBlocks(shape, cellSize);
 
-        // 确保有 Image 接收射线（预制体通常已有，没有则取现有组件）
+        // 中心图标
+        var iconPath = placedItem.ItemData.IconPath;
+        if (!string.IsNullOrEmpty(iconPath))
+        {
+            var iconGo = new GameObject("Icon", typeof(Image));
+            iconGo.transform.SetParent(transform, false);
+            var iconImg = iconGo.GetComponent<Image>();
+            iconImg.sprite = Resources.Load<Sprite>(iconPath);
+            iconImg.raycastTarget = false;
+            iconImg.preserveAspect = true;
+            var iconRt = iconGo.GetComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0, 1); iconRt.anchorMax = new Vector2(0, 1);
+            iconRt.pivot = new Vector2(0.5f, 0.5f);
+            iconRt.anchoredPosition = new Vector2(shape.Width * cellSize / 2, -shape.Height * cellSize / 2);
+            iconRt.sizeDelta = new Vector2(cellSize, cellSize);
+        }
+
+        // 确保有 Image 接收射线
         if (!_background)
             _background = GetComponent<Image>();
         if (_background)
