@@ -64,6 +64,14 @@ public class HotUpdateBootstrap : MonoBehaviour
         // --- 阶段 1: 初始化 AOT 框架 ---
         Debug.Log("[HotUpdate] 阶段 1/4: 初始化 AOT 框架...");
         var ui = UIManager.Instance;
+
+        // 确保 TTLoginBridge 存在（永久对象，回调接收用）
+        if (!FindObjectOfType<TTLoginBridge>())
+        {
+            var bridgeGo = new GameObject("[TTLoginBridge]");
+            bridgeGo.AddComponent<TTLoginBridge>();
+            DontDestroyOnLoad(bridgeGo);
+        }
         yield return null; // 等一帧确保 Canvas 创建
 
         Assembly hotUpdateAss = null;
