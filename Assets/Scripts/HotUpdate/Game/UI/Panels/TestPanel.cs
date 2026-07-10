@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,7 +9,7 @@ using UnityEngine.UI;
 /// </summary>
 public class TestPanel : UIPanel{
     [Header("文本")]
-    [SerializeField] private TMP_Text _titleText;
+    [SerializeField] private Text _titleText;
 
     [Header("按钮")]
     [SerializeField] private Button _clickButton;

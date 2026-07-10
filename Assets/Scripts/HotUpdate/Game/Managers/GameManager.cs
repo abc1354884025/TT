@@ -1,4 +1,5 @@
 using System.Collections;
+using TTSDK;
 using UnityEngine;
 
 /// <summary>
@@ -32,6 +33,9 @@ public class GameManager : MonoBehaviour
         // 1. 加载配置
         ConfigLoader.LoadAll();
 
+        TT.CheckScene(TTSideBar.SceneEnum.SideBar, (ttt) => { },
+            () => { Debug.Log("[GameManager] TTSDK 初始化成功"); },
+            (error, tttt) => { Debug.LogError($"[GameManager] TTSDK 初始化失败: {error}"); });
         // 2. 注入热更 Assembly
         UIManager.Instance.SetHotUpdateAssembly(typeof(GameManager).Assembly);
 
@@ -42,7 +46,7 @@ public class GameManager : MonoBehaviour
     }
 
     public void GoToPrepare() { CurrentState = State.Prepare; CurrentRound++; }
-    public void GoToBattle()   { CurrentState = State.Battle; }
-    public void GoToReward()   { CurrentState = State.Reward; }
+    public void GoToBattle() { CurrentState = State.Battle; }
+    public void GoToReward() { CurrentState = State.Reward; }
     public void GoToMainMenu() { CurrentState = State.MainMenu; CurrentRound = 1; }
 }

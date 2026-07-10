@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -9,7 +8,7 @@ using UnityEngine.UI;
 /// </summary>
 public class InventoryItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    [SerializeField] private TMP_Text _nameText;
+    [SerializeField] private Text _nameText;
     [SerializeField] private Image _bg;
     [SerializeField] private Button _button;
 
@@ -32,7 +31,7 @@ public class InventoryItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandle
 
     private void Awake()
     {
-        if (!_nameText) _nameText = GetComponentInChildren<TMP_Text>();
+        if (!_nameText) _nameText = GetComponentInChildren<Text>();
         if (!_bg) _bg = GetComponent<Image>();
         if (!_button) _button = GetComponent<Button>();
     }

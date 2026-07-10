@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using KingSoft.UI;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,8 +14,8 @@ public class PreparePanel : UIPanel
     [SerializeField] private StatBarWidget _atkBar;
     [SerializeField] private StatBarWidget _defBar;
     [SerializeField] private StatBarWidget _hpBar;
-    [SerializeField] private TMP_Text _goldText;
-    [SerializeField] private TMP_Text _roundText;
+    [SerializeField] private Text _goldText;
+    [SerializeField] private Text _roundText;
 
     [Header("背包网格")]
     [SerializeField] private BackpackGridWidget _gridWidget;

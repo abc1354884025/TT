@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,17 +10,17 @@ using UnityEngine.UI;
 public class BattlePanel : UIPanel
 {
     [Header("玩家")]
-    [SerializeField] private TMP_Text _playerNameText;
+    [SerializeField] private Text _playerNameText;
     [SerializeField] private Slider _playerHPBar;
-    [SerializeField] private TMP_Text _playerHPText;
+    [SerializeField] private Text _playerHPText;
 
     [Header("敌人")]
-    [SerializeField] private TMP_Text _enemyNameText;
+    [SerializeField] private Text _enemyNameText;
     [SerializeField] private Slider _enemyHPBar;
-    [SerializeField] private TMP_Text _enemyHPText;
+    [SerializeField] private Text _enemyHPText;
 
     [Header("结果")]
-    [SerializeField] private TMP_Text _resultText;
+    [SerializeField] private Text _resultText;
     [SerializeField] private Button _continueButton;
 
     [Header("日志")]
@@ -83,7 +82,7 @@ public class BattlePanel : UIPanel
         if (_continueButton) _continueButton.gameObject.SetActive(true);
     }
 
-    private void UpdateHPBar(Slider slider, TMP_Text text, int current, int max)
+    private void UpdateHPBar(Slider slider, Text text, int current, int max)
     {
         if (slider) slider.value = max > 0 ? (float)current / max : 0;
         if (text) text.text = $"{current}/{max}";

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,8 +8,8 @@ using UnityEngine.UI;
 /// </summary>
 public class RewardPanel : UIPanel
 {
-    [SerializeField] private TMP_Text _resultText;
-    [SerializeField] private TMP_Text _goldText;
+    [SerializeField] private Text _resultText;
+    [SerializeField] private Text _goldText;
     [SerializeField] private Transform _rewardContainer;
     [SerializeField] private Button _continueButton;
 

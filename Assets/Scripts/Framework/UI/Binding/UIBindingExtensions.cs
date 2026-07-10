@@ -1,5 +1,4 @@
 using System;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,16 +10,16 @@ using UnityEngine.UI;
 /// </summary>
 public static class UIBindingExtensions
 {
-    #region TMP_Text
+    #region Text
 
-    public static Action BindTo(this TMP_Text text, BindableProperty<string> prop)
+    public static Action BindTo(this Text text, BindableProperty<string> prop)
     {
         void H(string v) { if (text) text.text = v ?? ""; }
         prop.OnChanged += H; prop.Refresh();
         return () => prop.OnChanged -= H;
     }
 
-    public static Action BindTo<T>(this TMP_Text text, BindableProperty<T> prop)
+    public static Action BindTo<T>(this Text text, BindableProperty<T> prop)
     {
         void H(T v) { if (text) text.text = v?.ToString() ?? ""; }
         prop.OnChanged += H; prop.Refresh();
@@ -151,9 +150,9 @@ public static class UIBindingExtensions
 
     #endregion
 
-    #region TMP_InputField
+    #region InputField
 
-    public static Action BindTo(this TMP_InputField input, BindableProperty<string> prop)
+    public static Action BindTo(this InputField input, BindableProperty<string> prop)
     {
         void H(string v) { if (input) input.text = v ?? ""; }
         prop.OnChanged += H; prop.Refresh();

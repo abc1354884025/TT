@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,7 +8,7 @@ using UnityEngine.UI;
 /// </summary>
 public class MainMenuPanel : UIPanel
 {
-    [SerializeField] private TMP_Text _titleText;
+    [SerializeField] private Text _titleText;
     [SerializeField] private Button _startButton;
     [SerializeField] private Button _quitButton;
 

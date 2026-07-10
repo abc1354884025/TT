@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
 /// 商店物品卡片——显示物品图标/名称/价格/稀有度边框，点击购买。
@@ -9,8 +8,8 @@ using TMPro;
 public class ShopItemWidget : MonoBehaviour
 {
     [SerializeField] private Image _icon;
-    [SerializeField] private TMP_Text _nameText;
-    [SerializeField] private TMP_Text _priceText;
+    [SerializeField] private Text _nameText;
+    [SerializeField] private Text _priceText;
     [SerializeField] private RarityBadgeWidget _rarityBadge;
     [SerializeField] private Button _buyButton;
 
@@ -20,8 +19,8 @@ public class ShopItemWidget : MonoBehaviour
     private void Awake()
     {
         // 自动查找（优先 Inspector 拖拽的值）
-        if (!_nameText) _nameText = transform.Find("NameText")?.GetComponent<TMP_Text>();
-        if (!_priceText) _priceText = transform.Find("PriceText")?.GetComponent<TMP_Text>();
+        if (!_nameText) _nameText = transform.Find("NameText")?.GetComponent<Text>();
+        if (!_priceText) _priceText = transform.Find("PriceText")?.GetComponent<Text>();
         if (!_buyButton) _buyButton = GetComponent<Button>();
         if (!_rarityBadge) _rarityBadge = GetComponent<RarityBadgeWidget>();
     }
