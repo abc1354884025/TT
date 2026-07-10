@@ -145,6 +145,11 @@ public class AssetBundleProvider : IResourceProvider
         onLoaded?.Invoke(instance);
     }
 
+    public Sprite LoadSprite(string path)
+    {
+        return Load<Sprite>(path);
+    }
+
     public void Release(string path)
     {
         if (!_refs.TryGetValue(path, out var rc)) return;

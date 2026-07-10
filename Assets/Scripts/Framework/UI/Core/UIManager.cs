@@ -41,6 +41,7 @@ public class UIManager : MonoSingleton<UIManager>
         base.Awake();
         if (_resourceProvider == null)
             _resourceProvider = new ResourcesProvider(this);
+            ResourceManager.SetProvider(_resourceProvider);
 
         EnsureLayerRoots();
     }
@@ -90,6 +91,7 @@ public class UIManager : MonoSingleton<UIManager>
     public void SetResourceProvider(IResourceProvider provider)
     {
         _resourceProvider = provider;
+        ResourceManager.SetProvider(provider);
     }
 
     #endregion

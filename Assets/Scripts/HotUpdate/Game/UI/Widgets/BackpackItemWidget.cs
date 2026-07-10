@@ -40,7 +40,7 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
             var iconGo = new GameObject("Icon", typeof(Image));
             iconGo.transform.SetParent(transform, false);
             var iconImg = iconGo.GetComponent<Image>();
-            iconImg.sprite = Resources.Load<Sprite>(iconPath);
+            iconImg.sprite = ResourceManager.LoadSprite(iconPath);
             iconImg.raycastTarget = false;
             iconImg.preserveAspect = true;
             var iconRt = iconGo.GetComponent<RectTransform>();

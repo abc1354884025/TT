@@ -76,5 +76,10 @@ public class ResourcesProvider : IResourceProvider
         _refs[path].Asset = asset;
     }
 
+    public Sprite LoadSprite(string path)
+    {
+        return Resources.Load<Sprite>(path);
+    }
+
     private class RefCount { public int Count; public UnityEngine.Object Asset; }
 }

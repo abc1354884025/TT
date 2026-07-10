@@ -32,7 +32,7 @@ public class ShopItemWidget : MonoBehaviour
         if (_nameText) _nameText.text = data.Name;
         if (_priceText) _priceText.text = $"{data.BuyPrice}G";
         if (_icon && !string.IsNullOrEmpty(data.IconPath))
-            _icon.sprite = Resources.Load<Sprite>(data.IconPath);
+            _icon.sprite = ResourceManager.LoadSprite(data.IconPath);
         if (_rarityBadge) _rarityBadge.SetRarity(data.Rarity);
         if (_buyButton)
         {
