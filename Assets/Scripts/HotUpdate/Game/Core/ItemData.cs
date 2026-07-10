@@ -33,6 +33,9 @@ public class ItemData
     /// <summary>描述文本</summary>
     public string Description;
 
+    /// <summary>效果列表（JSON 字符串数组，如 [{"trigger":"Periodic","interval":5,"action":"heal","value":1}]）</summary>
+    public string Effects;
+
     /// <summary>售价（金币）</summary>
     public int SellPrice;
 
