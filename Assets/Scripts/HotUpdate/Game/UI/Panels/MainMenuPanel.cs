@@ -36,14 +36,14 @@ public class MainMenuPanel : UIPanel
     private void CheckSideBar()
     {
         TT.CheckScene(TTSideBar.SceneEnum.SideBar,
-            onSuccess: (available) =>
+            (available) =>
             {
                 _sideBarAvailable = available;
                 if (_sideBarButton) _sideBarButton.gameObject.SetActive(available);
                 Debug.Log($"[MainMenu] 侧边栏可用: {available}");
             },
-            onComplete: () => { },
-            onError: (code, msg) =>
+            () => { },
+            (code, msg) =>
             {
                 _sideBarAvailable = false;
                 if (_sideBarButton) _sideBarButton.gameObject.SetActive(false);
@@ -59,9 +59,9 @@ public class MainMenuPanel : UIPanel
         param["scene"] = "sidebar";
 
         TT.NavigateToScene(param,
-            onSuccess: () => Debug.Log("[MainMenu] 侧边栏已打开"),
-            onComplete: () => { },
-            onError: (code, msg) => Debug.LogWarning($"[MainMenu] 侧边栏打开失败: {code} {msg}"));
+            () => Debug.Log("[MainMenu] 侧边栏已打开"),
+            () => { },
+            (code, msg) => Debug.LogWarning($"[MainMenu] 侧边栏打开失败: {code} {msg}"));
     }
 
     private void OnStart()
