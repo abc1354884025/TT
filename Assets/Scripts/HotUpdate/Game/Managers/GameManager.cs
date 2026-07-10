@@ -1,5 +1,4 @@
 using System.Collections;
-using TTSDK;
 using UnityEngine;
 
 /// <summary>
@@ -21,6 +20,14 @@ public class GameManager : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // 确保 SideBarManager 存在
+        if (!FindObjectOfType<SideBarManager>())
+        {
+            var go = new GameObject("[SideBarManager]");
+            go.transform.SetParent(transform);
+            go.AddComponent<SideBarManager>();
+        }
     }
 
     private void Start()
@@ -33,20 +40,26 @@ public class GameManager : MonoBehaviour
         // 1. 加载配置
         ConfigLoader.LoadAll();
 
-        TT.CheckScene(TTSideBar.SceneEnum.SideBar, (ttt) => { },
-            () => { Debug.Log("[GameManager] TTSDK 初始化成功"); },
-            (error, tttt) => { Debug.LogError($"[GameManager] TTSDK 初始化失败: {error}"); });
-        // 2. 注入热更 Assembly
+        // 2. 初始化侧边栏
+        SideBarManager.Instance.Init();
+
+        // 3. 注入热更 Assembly
         UIManager.Instance.SetHotUpdateAssembly(typeof(GameManager).Assembly);
 
-        // 3. 打开主菜单
+        // 4. 打开主菜单
         CurrentState = State.MainMenu;
         UIManager.Instance.Open(_startPanel);
         yield break;
     }
 
+    /// <summary>打开侧边栏</summary>
+    public void ShowSideBar()
+    {
+        SideBarManager.Instance?.Show();
+    }
+
     public void GoToPrepare() { CurrentState = State.Prepare; CurrentRound++; }
-    public void GoToBattle() { CurrentState = State.Battle; }
-    public void GoToReward() { CurrentState = State.Reward; }
+    public void GoToBattle()   { CurrentState = State.Battle; }
+    public void GoToReward()   { CurrentState = State.Reward; }
     public void GoToMainMenu() { CurrentState = State.MainMenu; CurrentRound = 1; }
 }
