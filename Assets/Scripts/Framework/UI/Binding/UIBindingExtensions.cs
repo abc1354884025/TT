@@ -28,24 +28,6 @@ public static class UIBindingExtensions
 
     #endregion
 
-    #region Text (UGUI)
-
-    public static Action BindTo(this Text text, BindableProperty<string> prop)
-    {
-        void H(string v) { if (text) text.text = v ?? ""; }
-        prop.OnChanged += H; prop.Refresh();
-        return () => prop.OnChanged -= H;
-    }
-
-    public static Action BindTo<T>(this Text text, BindableProperty<T> prop)
-    {
-        void H(T v) { if (text) text.text = v?.ToString() ?? ""; }
-        prop.OnChanged += H; prop.Refresh();
-        return () => prop.OnChanged -= H;
-    }
-
-    #endregion
-
     #region Image
 
     public static Action BindTo(this Image img, BindableProperty<Sprite> prop)
