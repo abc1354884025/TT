@@ -118,7 +118,10 @@ public class XlsxItemImporter : EditorWindow
         var doc = new XmlDocument();
         doc.Load(stream);
 
-        foreach (XmlNode rowNode in doc.GetElementsByTagName("row"))
+        var nsmgr = new XmlNamespaceManager(doc.NameTable);
+        nsmgr.AddNamespace("s", "http://schemas.openxmlformats.org/spreadsheetml/2006/main");
+
+        foreach (XmlNode rowNode in doc.SelectNodes("//s:row", nsmgr))
         {
             // 找出该行最大列号，填充空位
             int maxCol = -1;
@@ -131,7 +134,7 @@ public class XlsxItemImporter : EditorWindow
                 if (col < 0) continue;
 
                 var t = cell.Attributes?["t"]?.Value;
-                var vNode = cell.SelectSingleNode("v");
+                var vNode = cell.SelectSingleNode("s:v", nsmgr);
                 var v = vNode?.InnerText ?? "";
 
                 string val;
