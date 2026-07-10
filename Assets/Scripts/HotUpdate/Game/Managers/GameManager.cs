@@ -20,14 +20,6 @@ public class GameManager : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
-        // 确保 SideBarManager 存在
-        if (!FindObjectOfType<SideBarManager>())
-        {
-            var go = new GameObject("[SideBarManager]");
-            go.transform.SetParent(transform);
-            go.AddComponent<SideBarManager>();
-        }
     }
 
     private void Start()
@@ -37,25 +29,12 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator InitSequence()
     {
-        // 1. 加载配置
         ConfigLoader.LoadAll();
-
-        // 2. 初始化侧边栏
-        SideBarManager.Instance.Init();
-
-        // 3. 注入热更 Assembly
         UIManager.Instance.SetHotUpdateAssembly(typeof(GameManager).Assembly);
 
-        // 4. 打开主菜单
         CurrentState = State.MainMenu;
         UIManager.Instance.Open(_startPanel);
         yield break;
-    }
-
-    /// <summary>打开侧边栏</summary>
-    public void ShowSideBar()
-    {
-        SideBarManager.Instance?.Show();
     }
 
     public void GoToPrepare() { CurrentState = State.Prepare; CurrentRound++; }
