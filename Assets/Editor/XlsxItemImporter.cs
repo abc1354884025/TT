@@ -2,13 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Text;
 using System.Xml;
 using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// 直接读取 .xlsx 文件导出为 items.json（无第三方依赖）。
+/// 零依赖 xlsx → items.json 转换器。不引用 HotUpdate 类型，纯字符串拼接。
 /// 菜单：Tools → Import Items from XLSX
+///
+/// xlsx 表头（第1行）：
+///   Id | Name | IconPath | Rarity | Type | ShapeMatrix | Attack | Defense | HP | CritChance | Description | SellPrice | BuyPrice | Effects
+///
+/// ShapeMatrix 格式："1,1;1,0"（分号分行，逗号分列）
+/// Effects 格式：[{"trigger":"Periodic","interval":5,"action":"heal","value":1}]
 /// </summary>
 public class XlsxItemImporter : EditorWindow
 {
@@ -20,11 +27,10 @@ public class XlsxItemImporter : EditorWindow
     {
         if (!File.Exists(XlsxPath))
         {
-            Debug.LogError($"[XLSX] 找不到 {XlsxPath}，请在 Excel 中另存为 items.xlsx 放到此路径");
+            Debug.LogError($"[XLSX] 找不到 {XlsxPath}。请将 items.xlsx 放到此路径。");
             return;
         }
 
-        // 解析 xlsx（本质是 zip 包）
         List<string> sharedStrings;
         List<List<string>> rows;
 
@@ -34,55 +40,64 @@ public class XlsxItemImporter : EditorWindow
             rows = ParseSheet(zip, sharedStrings);
         }
 
-        // 第一行是表头，跳过
-        var items = new List<ItemData>();
+        if (rows.Count < 2) { Debug.LogError("[XLSX] 无数据行"); return; }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("{\n  \"items\": [");
+
+        int count = 0;
         for (int i = 1; i < rows.Count; i++)
         {
-            var row = rows[i];
-            if (row.Count < 13 || string.IsNullOrWhiteSpace(row[0])) continue;
+            var r = rows[i];
+            if (r.Count < 6 || string.IsNullOrWhiteSpace(r[0])) continue;
 
             try
             {
-                items.Add(new ItemData
-                {
-                    Id = row[0].Trim(),
-                    Name = row[1].Trim(),
-                    IconPath = row[2].Trim(),
-                    Rarity = (ItemRarity)int.Parse(row[3]),
-                    Type = (ItemType)int.Parse(row[4]),
-                    ShapeMatrix = ParseShape(row[5]),
-                    Attack = int.Parse(row[6]),
-                    Defense = int.Parse(row[7]),
-                    HP = int.Parse(row[8]),
-                    CritChance = int.Parse(row[9]),
-                    Description = row[10].Trim(),
-                    SellPrice = int.Parse(row[11]),
-                    BuyPrice = int.Parse(row[12]),
-                    Effects = row.Count > 13 ? row[13].Trim() : "[]",
-                });
+                var id = Val(r, 0); var name = Val(r, 1); var icon = Val(r, 2);
+                var rarity = Val(r, 3); var type = Val(r, 4); var shape = Val(r, 5);
+                var atk = Val(r, 6); var def = Val(r, 7); var hp = Val(r, 8);
+                var crit = Val(r, 9); var desc = Val(r, 10); var sell = Val(r, 11);
+                var buy = Val(r, 12); var effects = r.Count > 13 ? Val(r, 13) : "[]";
+
+                if (string.IsNullOrEmpty(effects) || effects == "0") effects = "[]";
+
+                sb.Append("    {");
+                sb.Append($"\"Id\":\"{id}\",\"Name\":\"{name}\",\"IconPath\":\"{icon}\",");
+                sb.Append($"\"Rarity\":{rarity},\"Type\":{type},");
+                sb.Append($"\"ShapeMatrix\":[{ToMatrix(shape)}],");
+                sb.Append($"\"Attack\":{atk},\"Defense\":{def},\"HP\":{hp},\"CritChance\":{crit},");
+                sb.Append($"\"Description\":\"{Escape(desc)}\",");
+                sb.Append($"\"SellPrice\":{sell},\"BuyPrice\":{buy},");
+                sb.Append($"\"Effects\":{effects}");
+                sb.Append("}");
+
+                if (i < rows.Count - 1) sb.Append(",");
+                sb.AppendLine();
+                count++;
             }
             catch (Exception e)
             {
-                Debug.LogError($"[XLSX] 第 {i + 1} 行解析失败: {e.Message}");
+                Debug.LogError($"[XLSX] 第 {i + 1} 行出错: {e.Message}");
             }
         }
 
-        var json = JsonUtility.ToJson(new ItemListWrapper { items = items.ToArray() }, true);
-        File.WriteAllText(JsonOutputPath, json);
+        sb.AppendLine("  ]\n}");
+
+        File.WriteAllText(JsonOutputPath, sb.ToString());
         AssetDatabase.Refresh();
 
-        Debug.Log($"[XLSX] 导入完成！{items.Count} 个物品 → {JsonOutputPath}");
-        EditorUtility.DisplayDialog("导入完成", $"{items.Count} 个物品已导出到\n{JsonOutputPath}", "好的");
+        Debug.Log($"[XLSX] 完成！{count} 个物品 → {JsonOutputPath}");
+        EditorUtility.DisplayDialog("导入完成", $"{count} 个物品已导出", "好的");
     }
 
     // ====== XLSX 解析 ======
 
     private static List<string> ParseSharedStrings(ZipArchive zip)
     {
-        var entry = zip.GetEntry("xl/sharedStrings.xml");
-        if (entry == null) return new List<string>();
-
         var list = new List<string>();
+        var entry = zip.GetEntry("xl/sharedStrings.xml");
+        if (entry == null) return list;
+
         using var stream = entry.Open();
         using var reader = XmlReader.Create(stream);
         while (reader.Read())
@@ -96,7 +111,7 @@ public class XlsxItemImporter : EditorWindow
         return list;
     }
 
-    private static List<List<string>> ParseSheet(ZipArchive zip, List<string> sharedStrings)
+    private static List<List<string>> ParseSheet(ZipArchive zip, List<string> ss)
     {
         var result = new List<List<string>>();
         var entry = zip.GetEntry("xl/worksheets/sheet1.xml");
@@ -106,20 +121,18 @@ public class XlsxItemImporter : EditorWindow
         var doc = new XmlDocument();
         doc.Load(stream);
 
-        var rows = doc.GetElementsByTagName("row");
-        foreach (XmlNode rowNode in rows)
+        foreach (XmlNode rowNode in doc.GetElementsByTagName("row"))
         {
             var row = new List<string>();
-            var cells = rowNode.ChildNodes;
-            foreach (XmlNode cell in cells)
+            foreach (XmlNode cell in rowNode.ChildNodes)
             {
                 if (cell.Name != "c") continue;
-                var t = cell.Attributes?["t"]?.Value;     // s = shared string
+                var t = cell.Attributes?["t"]?.Value;
                 var vNode = cell.SelectSingleNode("v");
                 var v = vNode?.InnerText ?? "";
 
-                if (t == "s" && int.TryParse(v, out int idx) && idx < sharedStrings.Count)
-                    row.Add(sharedStrings[idx]);
+                if (t == "s" && int.TryParse(v, out int idx) && idx < ss.Count)
+                    row.Add(ss[idx]);
                 else
                     row.Add(v);
             }
@@ -128,25 +141,25 @@ public class XlsxItemImporter : EditorWindow
         return result;
     }
 
-    // ====== 形状解析 ======
+    // ====== 辅助 ======
 
-    private static int[][] ParseShape(string raw)
+    private static string Val(List<string> row, int idx)
+        => idx < row.Count ? row[idx].Trim() : "0";
+
+    private static string Escape(string s)
+        => s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n");
+
+    /// <summary>"1,1;1,0" → [1,1],[1,0]</summary>
+    private static string ToMatrix(string raw)
     {
-        raw = raw.Trim();
-        if (string.IsNullOrEmpty(raw)) return new[] { new[] { 1 } };
-
+        if (string.IsNullOrWhiteSpace(raw)) return "1";
         var rows = raw.Split(';');
-        var result = new int[rows.Length][];
-        for (int r = 0; r < rows.Length; r++)
+        var parts = new List<string>();
+        foreach (var row in rows)
         {
-            var cols = rows[r].Split(',');
-            result[r] = new int[cols.Length];
-            for (int c = 0; c < cols.Length; c++)
-                int.TryParse(cols[c].Trim(), out result[r][c]);
+            var nums = row.Split(',');
+            parts.Add(string.Join(",", nums));
         }
-        return result;
+        return string.Join("],[", parts);
     }
-
-    [Serializable]
-    private class ItemListWrapper { public ItemData[] items; }
 }
