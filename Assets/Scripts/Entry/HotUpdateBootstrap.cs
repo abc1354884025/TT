@@ -188,19 +188,14 @@ public class HotUpdateBootstrap : MonoBehaviour
             }
         }
 
-        // --- 阶段 4: 打开首个面板 ---
-        Debug.Log("[HotUpdate] 阶段 4/4: 打开初始面板...");
-        if (!string.IsNullOrEmpty(_startPanel))
-        {
-            ui.Open(_startPanel, new StartPanelData
-            {
-                Version = resolvedVersion,
-                IsHotUpdated = hotUpdateAss != null
-            });
-        }
+        // --- 阶段 4: 注入热更 Assembly ---
+        Debug.Log("[HotUpdate] 阶段 4/4: 注入热更 Assembly...");
+        if (hotUpdateAss != null)
+            ui.SetHotUpdateAssembly(hotUpdateAss);
 
+        // GameManager 会接管后续：登录 → 打开首个面板
         var elapsed = Time.realtimeSinceStartup - startTime;
-        Debug.Log($"[HotUpdate] ===== 启动完成，耗时 {elapsed:F1}s =====");
+        Debug.Log($"[HotUpdate] ===== 框架就绪，耗时 {elapsed:F1}s =====");
     }
 
     #endregion
