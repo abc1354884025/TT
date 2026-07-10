@@ -100,16 +100,10 @@ public class XlsxItemImporter : EditorWindow
 
         using var stream = entry.Open();
         using var reader = XmlReader.Create(stream);
-        string currentText = null;
         while (reader.Read())
         {
             if (reader.NodeType == XmlNodeType.Element && reader.Name == "t")
-                currentText = reader.ReadElementContentAsString();
-            else if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "si" && currentText != null)
-            {
-                list.Add(currentText);
-                currentText = null;
-            }
+                list.Add(reader.ReadElementContentAsString());
         }
         return list;
     }
