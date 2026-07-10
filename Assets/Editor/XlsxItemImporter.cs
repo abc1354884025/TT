@@ -100,12 +100,15 @@ public class XlsxItemImporter : EditorWindow
 
         using var stream = entry.Open();
         using var reader = XmlReader.Create(stream);
+        string currentText = null;
         while (reader.Read())
         {
             if (reader.NodeType == XmlNodeType.Element && reader.Name == "t")
+                currentText = reader.ReadElementContentAsString();
+            else if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "si" && currentText != null)
             {
-                reader.Read();
-                list.Add(reader.Value);
+                list.Add(currentText);
+                currentText = null;
             }
         }
         return list;
@@ -153,10 +156,12 @@ public class XlsxItemImporter : EditorWindow
             result.Add(row);
         }
 
+        Debug.Log($"[XLSX] 共享字符串表: {ss.Count} 条");
+        for (int d = 0; d < Math.Min(3, ss.Count); d++)
+            Debug.Log($"[XLSX] 共享串[{d}] = \"{ss[d]}\"");
         Debug.Log($"[XLSX] 解析到 {result.Count} 行（含表头），首行 {result[0].Count} 列");
-        // 打印前 3 行数据用于调试
         for (int d = 0; d < Math.Min(3, result.Count); d++)
-            Debug.Log($"[XLSX] 行{d}: [{string.Join(" | ", result[d])}]");
+            Debug.Log($"[XLSX] 行{d}({result[d].Count}列): [{string.Join(" | ", result[d])}]");
         return result;
     }
 
