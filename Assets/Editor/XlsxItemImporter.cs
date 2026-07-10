@@ -123,22 +123,54 @@ public class XlsxItemImporter : EditorWindow
 
         foreach (XmlNode rowNode in doc.GetElementsByTagName("row"))
         {
-            var row = new List<string>();
+            // 找出该行最大列号，填充空位
+            int maxCol = -1;
+            var colMap = new Dictionary<int, string>();
             foreach (XmlNode cell in rowNode.ChildNodes)
             {
                 if (cell.Name != "c") continue;
+                var refAttr = cell.Attributes?["r"]?.Value; // 如 "A1", "B2"
+                int col = GetColIndex(refAttr);
+                if (col < 0) continue;
+
                 var t = cell.Attributes?["t"]?.Value;
                 var vNode = cell.SelectSingleNode("v");
                 var v = vNode?.InnerText ?? "";
 
+                string val;
                 if (t == "s" && int.TryParse(v, out int idx) && idx < ss.Count)
-                    row.Add(ss[idx]);
+                    val = ss[idx];
                 else
-                    row.Add(v);
+                    val = v;
+
+                colMap[col] = val;
+                if (col > maxCol) maxCol = col;
             }
+
+            var row = new List<string>();
+            for (int c = 0; c <= maxCol; c++)
+                row.Add(colMap.TryGetValue(c, out var val) ? val : "");
             result.Add(row);
         }
+
+        Debug.Log($"[XLSX] 解析到 {result.Count} 行（含表头），首行 {result[0].Count} 列");
         return result;
+    }
+
+    /// <summary>列的字母引用转数字索引，A=0, B=1, ..., Z=25, AA=26</summary>
+    private static int GetColIndex(string cellRef)
+    {
+        if (string.IsNullOrEmpty(cellRef)) return -1;
+        string letters = "";
+        foreach (char c in cellRef)
+        {
+            if (char.IsLetter(c)) letters += c;
+            else break;
+        }
+        int result = 0;
+        foreach (char c in letters)
+            result = result * 26 + (char.ToUpper(c) - 'A' + 1);
+        return result - 1;
     }
 
     // ====== 辅助 ======
