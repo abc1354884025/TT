@@ -2,6 +2,7 @@
     "name": "UIFramework",
     "rootNamespace": "",
     "references": [
+        "YooAsset"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

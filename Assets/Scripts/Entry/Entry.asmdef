@@ -2,7 +2,8 @@
     "name": "Entry",
     "rootNamespace": "",
     "references": [
-        "UIFramework"
+        "UIFramework",
+        "YooAsset"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -25,6 +25,9 @@ public static class ResourceManager
         return Resources.Load<Sprite>(path);
     }
 
+    /// <summary>YooAsset 是否已初始化完成（Provider 已设置且不是 ResourcesProvider）</summary>
+    public static bool IsYooAssetReady => _provider != null && _provider is YooAssetProvider;
+
     /// <summary>当前 Provider</summary>
     public static IResourceProvider Provider => _provider;
 }

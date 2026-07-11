@@ -29,13 +29,17 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator InitSequence()
     {
+        // 等待 YooAsset 初始化完成（YooAssetBootstrap 在 Entry 中并行执行）
+        Debug.Log("[GameManager] 等待 YooAsset 初始化...");
+        yield return new WaitUntil(() => ResourceManager.IsYooAssetReady);
+        Debug.Log("[GameManager] YooAsset 已就绪");
+
         SaveManager.Load();
         ConfigLoader.LoadAll();
         UIManager.Instance.SetHotUpdateAssembly(typeof(GameManager).Assembly);
 
         CurrentState = State.MainMenu;
         UIManager.Instance.Open(_startPanel);
-        yield break;
     }
 
     public void GoToPrepare() { CurrentState = State.Prepare; CurrentRound++; }

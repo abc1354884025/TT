@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Networking;
+using YooAsset;
 
 /// <summary>
 /// HybridCLR 热更启动器。挂载在启动场景的 GameObject 上。
@@ -144,39 +145,42 @@ public class HotUpdateBootstrap : MonoBehaviour
                 Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
             }
 
-            // --- 阶段 3: 下载 UI AssetBundle ---
-            Debug.Log("[HotUpdate] 阶段 3/4: 下载 UI AssetBundle...");
-            var abProvider = new AssetBundleProvider(this);
+            // --- 阶段 3: 初始化 YooAsset ---
+            Debug.Log("[HotUpdate] 阶段 3/4: 初始化 YooAsset...");
 
-            foreach (var bundleName in _uiBundles)
+            YooAssets.Initialize();
+            if (!YooAssets.TryGetPackage("DefaultPackage", out var package))
+                package = YooAssets.CreatePackage("DefaultPackage");
+
+            var remoteService = new CdnRemoteService(_cdnBaseUrl, resolvedVersion);
+            var webOptions = new WebPlayModeOptions();
+            webOptions.WebServerFileSystemParameters =
+                FileSystemParameters.CreateDefaultWebServerFileSystemParameters();
+            webOptions.WebNetworkFileSystemParameters =
+                FileSystemParameters.CreateDefaultWebNetworkFileSystemParameters(remoteService);
+
+            var initOp = package.InitializePackageAsync(webOptions);
+            yield return initOp;
+
+            if (initOp.Status == EOperationStatus.Succeeded)
             {
-                var url = $"{_cdnBaseUrl}{resolvedVersion}/{bundleName}";
-                bool done = false; bool success = false;
-                abProvider.DownloadBundle(bundleName, url, ok => { done = true; success = ok; });
+                // 请求版本并加载清单
+                var versionOp = package.RequestPackageVersionAsync();
+                yield return versionOp;
 
-                float waitStart = Time.realtimeSinceStartup;
-                yield return new WaitUntil(() => done || (_timeoutSeconds > 0 && Time.realtimeSinceStartup - waitStart > _timeoutSeconds));
+                if (versionOp.Status == EOperationStatus.Succeeded)
+                {
+                    var manifestOptions = new LoadPackageManifestOptions(versionOp.PackageVersion, timeout: 60);
+                    yield return package.LoadPackageManifestAsync(manifestOptions);
+                }
 
-                if (!done)
-                {
-                    Debug.LogWarning($"[HotUpdate] AB 下载超时: {bundleName}");
-                    break;
-                }
-                if (!success)
-                {
-                    Debug.LogWarning($"[HotUpdate] AB 下载失败: {bundleName}");
-                    break;
-                }
+                var yooProvider = new YooAssetProvider(this, "DefaultPackage");
+                ui.SetResourceProvider(yooProvider);
+                Debug.Log("[HotUpdate] YooAsset 初始化完成，Provider 已切换");
             }
-
-            // 注册路径映射（按需添加你的面板）
-            abProvider.RegisterPath("UI/Panels/TestPanel", "ui_panels", "TestPanel");
-
-            // 如果 AB 加载成功，切换到 AB Provider
-            if (abProvider.IsBundleReady(_uiBundles.Length > 0 ? _uiBundles[0] : ""))
+            else
             {
-                ui.SetResourceProvider(abProvider);
-                Debug.Log("[HotUpdate] 已切换到 AssetBundleProvider");
+                Debug.LogWarning($"[HotUpdate] YooAsset 初始化失败: {initOp.Error}，退回 Resources");
             }
         }
 
@@ -185,7 +189,6 @@ public class HotUpdateBootstrap : MonoBehaviour
         if (hotUpdateAss != null)
             ui.SetHotUpdateAssembly(hotUpdateAss);
 
-        // GameManager 会接管后续：登录 → 打开首个面板
         var elapsed = Time.realtimeSinceStartup - startTime;
         Debug.Log($"[HotUpdate] ===== 框架就绪，耗时 {elapsed:F1}s =====");
     }

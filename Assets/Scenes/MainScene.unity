@@ -319,6 +319,7 @@ GameObject:
   - component: {fileID: 1392400878}
   - component: {fileID: 1392400877}
   - component: {fileID: 1392400879}
+  - component: {fileID: 1392400880}
   m_Layer: 0
   m_Name: Bootstrap
   m_TagString: Untagged
@@ -377,6 +378,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _startPanel: MainMenuPanel
+--- !u!114 &1392400880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392400876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ec1dc337c6a0d7438763d270bc0c714, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _packageName: DefaultPackage
+  _playMode: 1
+  _cdnBaseUrl: http://your-cdn.com/game/
+  _fallbackVersion: 1.0.0
+  _versionManifest: version.json
+  _editorSimulate: 1
 --- !u!1 &1702545226
 GameObject:
   m_ObjectHideFlags: 0

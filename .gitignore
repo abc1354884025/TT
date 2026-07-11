@@ -21,6 +21,10 @@
 # HybridCLR 本地生成数据（不推）
 HybridCLRData/
 
+# Build output
+Bundles/
+Tools/
+
 # OS
 .DS_Store
 Thumbs.db
