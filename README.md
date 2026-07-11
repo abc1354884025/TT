@@ -1,31 +1,34 @@
-# TT — 抖音小游戏益智合集
+# 🎒 TT — 背包乱斗 (Backpack Brawl)
 
-基于 **Unity 2022.3 LTS** 开发的抖音（Douyin/TikTok）小游戏项目，使用 **HybridCLR** 实现代码热更新（hot-update），定位为包含多种经典益智游戏的合集。
+> 在有限的背包格子里塞满装备，然后自动战斗吧！ (╯°□°)╯︵ ┻━┻
+
+基于 **Unity 2022.3 LTS** 开发的抖音（Douyin/TikTok）小游戏，使用 **HybridCLR** + **YooAsset** 实现代码和资源热更新。
 
 ---
 
-## 技术栈
+## 🛠 技术栈
 
 | 层级 | 技术 |
 |------|------|
-| 游戏引擎 | Unity 2022.3.62f3c1 |
-| 渲染管线 | URP（Universal Render Pipeline） |
-| 热更新 | [HybridCLR](https://github.com/focus-creative-games/hybridclr_unity) |
-| 小程序 SDK | ByteDance StarkSDK 6.7.7（TTSDK） |
-| 目标平台 | WebGL（抖音小游戏） |
-| 脚本后端 | IL2CPP |
-| UI 系统 | 自研 MVVM 框架（UGUI + TextMeshPro） |
-| 测试框架 | Unity Test Framework 1.1.33 |
+| 🎮 游戏引擎 | Unity 2022.3.62f3c1 |
+| 🖼 渲染管线 | URP（Universal Render Pipeline） |
+| 🔥 热更新 | [HybridCLR](https://github.com/focus-creative-games/hybridclr_unity) |
+| 📦 资源管理 | [YooAsset](https://github.com/tuyoogame/YooAsset) 3.0.3-beta |
+| ☁️ CDN | 火山引擎 TOS |
+| 📱 小程序 SDK | ByteDance StarkSDK 6.7.7（TTSDK） |
+| 🌐 目标平台 | WebGL（抖音小游戏） |
+| ⚙️ 脚本后端 | IL2CPP |
+| 🧩 UI 系统 | 自研 MVVM 框架（UGUI + TextMeshPro） |
 
 ---
 
-## 快速开始
+## 🚀 快速开始
 
 ### 开发环境
 
 1. 使用 **Unity 2022.3.62f3c1** 打开项目
-2. 打开 `Assets/Scenes/SampleScene.unity`
-3. 点击 Play 即可运行
+2. 打开 `Assets/Scenes/MainScene.unity`
+3. 点击 Play — YooAsset 自动以 EditorSimulateMode 运行 ✨
 
 ### 构建抖音小游戏
 
@@ -34,156 +37,114 @@
 3. 产物为 WebGL zip 包，输出到 `E:\TT\output\`
 4. 将 zip 导入「抖音开发者工具」预览/发布
 
-### CDN 热更（生产环境）
+### 构建资源包 & 上传 CDN
 
-HotUpdateBootstrap 启动流程：
-1. 初始化 AOT UI 框架（Canvas 层级）
-2. 从 CDN 下载 HotUpdate DLL → `Assembly.Load` 注入
-3. 下载 UI AssetBundle → 切换资源加载器
-4. 打开首个面板（`MainMenuPanel`）
-
-CDN 不可用时自动回退到本地 `Resources` 模式。
+1. **YooAsset → AssetBundle Builder** — 构建资源包（输出到 `Bundles/`）
+2. **Tools → YooAsset Uploader** — 扫描版本目录 → 一键同步到火山引擎 TOS ☁️
+3. CDN 版本清单（`version.json`）自动生成在 TOS 根目录  (｀・ω・´)b
 
 ---
 
-## 程序集架构
+## ⚔️ 游戏玩法
+
+**背包乱斗**：在有限的背包格子中拖拽放置不同形状的装备，聚合战斗属性后与敌人自动战斗。
 
 ```
-Entry (AOT) ──► UIFramework (AOT) ──► Unity.TextMeshPro
-                      ▲
-                      │
-                 HotUpdate  (autoReferenced: false)
+  🗡️ 长剑  🛡️ 盾牌  💍 戒指
+  ┌──┬──┬──┐
+  │🟦│🟦│  │   ← 把装备塞进背包！
+  │  │🟦│  │
+  └──┴──┴──┘
+    背包网格
+```
+
+游戏循环：**MainMenu → Prepare → Battle → Reward → ...** 🔄
+
+| 阶段 | 说明 |
+|------|------|
+| 🏠 MainMenu | 主菜单，进入准备阶段 |
+| 🎒 Prepare | 背包网格管理，从商店购买/拖拽放置装备 |
+| ⚔️ Battle | 回合制自动战斗，瞬间模拟完成 |
+| 🎁 Reward | 战斗结算，展示掉落/奖励 |
+
+### 核心类型
+
+| 类型 | 说明 |
+|------|------|
+| `GameManager` | 全局状态机，回合管理 |
+| `ConfigLoader` | JSON 配置加载（items / enemies / balance） |
+| `SaveManager` | 存档（TTSDK TT.Save） |
+| `DragDropManager` | 物品拖拽、旋转、碰撞检测 🔄 |
+| `BagGrid` | 背包网格：放置、碰撞、移除 |
+| `CombatStats` | 战斗属性聚合（ATK / DEF / HP / CRIT） |
+| `BattleResolver` | 回合制自动战斗模拟 ⚡ |
+
+---
+
+## 🏗 程序集架构
+
+```
+Entry ──► UIFramework ──► YooAsset
+              ▲
+              │
+         HotUpdate  (autoReferenced: false) ──► TTLitJson
 ```
 
 | 程序集 | 类型 | 职责 |
 |--------|------|------|
-| `Entry` | AOT | 启动引导 `HotUpdateBootstrap` |
-| `UIFramework` | AOT | UI 框架（MVVM 绑定、面板管理、资源加载） |
-| `HotUpdate` | **热更** | 游戏逻辑（面板、ViewModel、关卡、规则） |
-| `TTLitJson` | 内置 | JSON 序列化（TTSDK 附带） |
+| `Entry` | AOT | `HotUpdateBootstrap` + `YooAssetBootstrap` |
+| `UIFramework` | AOT | UI 框架 + `YooAssetProvider` |
+| `HotUpdate` | **热更** 🔥 | 游戏逻辑（面板、ViewModel、Widget、Manager） |
+| `TTLitJson` | 内置 | JSON 序列化 |
 | `TTWebGL` | 内置 | ByteDance WebGL 平台桥接 |
-| `com.bytedance.ttsdk.ref` | 内置 | 字节跳动 SDK 引用 |
 
-**关键约束**：`HotUpdate.asmdef` 设置 `autoReferenced: false`，AOT 绝不直接引用 HotUpdate 类型。通信通过 `UIPanel` 基类和反射完成。
+> ⚠️ **关键约束**：`HotUpdate.asmdef` 设置 `autoReferenced: false`，AOT 绝不直接引用 HotUpdate 类型。
 
 ---
 
-## UI 框架（MVVM）
-
-框架位于 `Assets/Scripts/Framework/UI/`，核心设计：
+## 🧩 UI 框架（MVVM）
 
 | 组件 | 说明 |
 |------|------|
-| `UIManager` | 单例，管理 5 层 Canvas 栈（Background/Normal/Popup/Top/System），通过反射按类名发现面板 |
-| `UIPanel` | 面板抽象基类，生命周期：`OnInit → OnOpen → OnShow ⇄ OnHide → OnClose` |
-| `BindableProperty<T>` | 泛型响应式属性，委托驱动，IL2CPP 安全 |
-| `ObservableObject` | ViewModel 基类，`PropertyChanged` 通知 |
-| `UIBindingExtensions` | 一行绑定（`text.BindTo(vm.Title)`），所有绑定返回 `Action` 解绑委托 |
-| `UIList` | 对象池化滚动列表 |
-| `IResourceProvider` | 资源加载抽象（`ResourcesProvider` 本地 / `AssetBundleProvider` CDN） |
+| `UIManager` | 5 层 Canvas 栈，按类名反射发现面板 |
+| `UIPanel` | 面板基类：`OnInit → OnOpen → OnShow ⇄ OnHide → OnClose` |
+| `BindableProperty<T>` | 响应式属性，委托驱动，IL2CPP 安全 💚 |
+| `UIBindingExtensions` | 一行绑定，返回 `Action` 解绑委托 |
+| `LoopScrollView` | 虚拟滚动列表（KingSoft.UI） |
+| `YooAssetProvider` | 基于 YooAsset 的 `IResourceProvider` 实现 |
 
-### 新建面板流程
+### 新建面板
 
 ```
-1. 创建 Panel.cs 继承 UIPanel，重写 OnOpen/OnClose
-2. 创建 ViewModel.cs 继承 ObservableObject，定义 BindableProperty 字段
-3. OnOpen 中创建 VM 并绑定 UI（收集解绑 Action）
-4. OnClose 中逐一 invoke 解绑，释放 VM
-5. 创建 Prefab 放在 Resources/UI/Panels/{PanelName}.prefab
-6. 通过 UIManager.Instance.Open("PanelName", data) 打开
+1. Panel.cs 继承 UIPanel，重写 OnOpen/OnClose
+2. ViewModel.cs 继承 ObservableObject，定义 BindableProperty
+3. OnOpen 中绑定 UI（收集 Action），OnClose 中 invoke 解绑
+4. Prefab 放 Resources/UI/Panels/{Name}.prefab
+5. UIManager.Instance.Open("PanelName", data)
 ```
 
 ---
 
-## 益智游戏合集
+## 📋 可用面板
 
-当前包含 **四种益智游戏**，全部实现在 HotUpdate 程序集中：
-
-| 游戏 | 规则 | 交互 | 网格 |
-|------|------|------|------|
-| **数回** (Number Link) | 用不相交路径连接相同数字对，填满所有格子 | 拖拽画线，回溯擦除 | 5×5 ~ 12×12 |
-| **数独** (Sudoku) | 每行/列/宫填入 1-9 不重复 | 点击格子 → 点击数字 | 固定 9×9 |
-| **数墙** (Nurikabe) | 涂黑格子形成岛屿，岛屿大小=数字，墙壁全连通 | 点击切换白/黑 | 5×5 ~ 15×15 |
-| **数桥** (Hashiwokakero) | 数字岛之间建桥，数字=桥总数，最多2座/对 | 拖拽岛之间建桥 | 稀疏岛屿 |
-
-### 游戏代码结构
-
-```
-Assets/Scripts/HotUpdate/Game/
-├── Puzzle/
-│   ├── Common/          ← 公共基础（PuzzleGrid, GridInputHandler, IPuzzleRuleEngine）
-│   ├── Sudoku/          ← 数独（Grid, LevelData, RuleEngine, SaveData）
-│   ├── Nurikabe/        ← 数墙
-│   ├── NumberLink/      ← 数回
-│   ├── HashiBridge/     ← 数桥
-│   └── Data/            ← SaveManager, LevelDatabase
-├── UI/
-│   ├── Panels/          ← 面板（MainMenu, LevelSelect, 4×游戏面板, Settings）
-│   ├── ViewModels/      ← ViewModel（PuzzleGameViewModel 基类 + 各游戏 VM）
-│   └── Widgets/         ← 可复用控件（GridCell, NumberButton, VictoryPopup…）
-```
-
-每个游戏实现：
-- **Grid**：棋盘状态
-- **LevelData**：关卡数据解析
-- **RuleEngine**：规则验证（`IPuzzleRuleEngine` 接口）
-- **SaveData**：存档序列化
-- **ViewModel**：游戏逻辑 + 撤销栈
-- **Panel**：渲染 + 交互
+| Panel ID | 状态 | 说明 |
+|----------|------|------|
+| `MainMenuPanel` | 🏠 MainMenu | 主菜单入口 |
+| `PreparePanel` | 🎒 Prepare | 背包网格、物品拖拽 |
+| `BattlePanel` | ⚔️ Battle | 战斗动画/日志 |
+| `RewardPanel` | 🎁 Reward | 结算界面 |
+| `TestPanel` | 🧪 — | 热更管线验证面板 |
 
 ---
 
-## 项目结构
+## 📐 开发约定
 
-```
-Assets/
-├── Scenes/
-│   └── SampleScene.unity          ← 主场景
-├── Scripts/
-│   ├── Entry/                     ← AOT 引导
-│   ├── Framework/                 ← AOT UI 框架
-│   └── HotUpdate/                 ← 热更游戏代码
-├── Prefabs/UI/                    ← 预制体（Panels/ Widgets/）
-├── Resources/UI/Panels/           ← Resources 加载路径
-├── Settings/                      ← URP 配置文件
-└── Plugins/ByteGame/              ← 字节跳动 SDK
-```
+1. **协程异步**：使用 `IEnumerator`，不用 `async/await`
+2. **绑定返回 Action**：收集到 `List<Action>`，`OnClose` 全部 invoke
+3. **Widget 自更新**：Widget 通过 `Bind(data)` 或 `SetIndex(i)` 自己更新 UI
+4. **面板按类名发现**：`UIManager.Open("PanelName")` 自动反射查找
+5. **MonoSingleton<T>**：框架单例，线程安全，DontDestroyOnLoad
 
 ---
 
-## 配置与工具
-
-- **`project.config.json`**：抖音小游戏项目配置
-- **`game.json`**：小游戏运行配置
-- **`.gitignore`**：忽略 Library/Temp/Logs/UserSettings 等
-
----
-
-## 开发约定
-
-1. **协程异步**：资源加载/初始化使用 `IEnumerator`，不使用 `async/await`
-2. **IL2CPP 安全**：不使用 `System.Reflection` 操作值类型，绑定通过泛型委托实现
-3. **所有绑定返回解绑 Action**：收集到 `List<Action>`，`OnClose` 中全部 invoke
-4. **面板按类名发现**：`UIManager.Open("TestPanel")` 在 HotUpdate 程序集中按类名反射查找
-5. **MonoSingleton**：框架单例使用 `MonoSingleton<T>`（线程安全，跨场景持久）
-
----
-
-## 可用面板（通过 UIManager.Open 打开）
-
-| Panel ID | 说明 | 所在程序集 |
-|----------|------|-----------|
-| `MainMenuPanel` | 主菜单（四个游戏入口） | HotUpdate |
-| `LevelSelectPanel` | 关卡选择（传入 PuzzleType） | HotUpdate |
-| `SudokuPanel` | 数独游戏面板 | HotUpdate |
-| `NurikabePanel` | 数墙游戏面板 | HotUpdate |
-| `NumberLinkPanel` | 数回游戏面板 | HotUpdate |
-| `HashiBridgePanel` | 数桥游戏面板 | HotUpdate |
-| `SettingsPanel` | 设置面板 | HotUpdate |
-| `TestPanel` | 测试/示例面板 | HotUpdate |
-
----
-
-## License
-
-项目仅供学习和参考使用。
+> 📝 仅供学习和参考使用 — 祝你背包满满，战无不胜！ (๑•̀ㅂ•́)و✧
