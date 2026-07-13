@@ -142,15 +142,9 @@ public class HotUpdateBootstrap : MonoBehaviour
 
                         foreach (var dllName in _hotUpdateDlls)
                         {
-                            byte[] dllBytes = null;
-                            var dllPath = dllName.Replace(".dll", ".bytes"); // HotUpdate.bytes
-
-                            // 尝试多种地址格式（兼容 AddressByFileName）
+                            // HotUpdate.bytes 已通过 BundleCollector DLL group (PackRawFile + AddressByFileName) 打入 YooAsset bundle
+                            var dllPath = dllName.Replace(".dll", ".bytes");
                             var handle = package.LoadAssetAsync<TextAsset>(dllPath);
-                            if (handle.Status == EOperationStatus.Failed)
-                                handle = package.LoadAssetAsync<TextAsset>(System.IO.Path.GetFileNameWithoutExtension(dllPath));
-                            if (handle.Status == EOperationStatus.Failed)
-                                handle = package.LoadAssetAsync<TextAsset>(dllName.Replace(".dll", "")); // HotUpdate
                             yield return handle;
 
                             if (handle.Status == EOperationStatus.Succeeded)
@@ -158,26 +152,12 @@ public class HotUpdateBootstrap : MonoBehaviour
                                 var ta = handle.GetAssetObject<TextAsset>();
                                 if (ta != null && ta.bytes.Length > 0)
                                 {
-                                    dllBytes = ta.bytes;
-                                    hotUpdateAss = Assembly.Load(dllBytes);
-                                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
+                                    hotUpdateAss = Assembly.Load(ta.bytes);
+                                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({ta.bytes.Length / 1024} KB)");
                                     break;
                                 }
                             }
-
-                            // YooAsset 找不到则退回直链下载
-                            if (dllBytes == null)
-                            {
-                                var url = $"{_cdnBaseUrl}{resolvedVersion}/{dllName}";
-                                yield return DownloadBytes(url, bytes => dllBytes = bytes);
-                                if (dllBytes != null)
-                                {
-                                    hotUpdateAss = Assembly.Load(dllBytes);
-                                    Debug.Log($"[HotUpdate] DLL 直链加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
-                                    break;
-                                }
-                                Debug.LogWarning($"[HotUpdate] DLL 加载失败: {dllName}");
-                            }
+                            Debug.LogWarning($"[HotUpdate] DLL 加载失败: {dllName}, {handle.Error}");
                         }
                     }
                     else
@@ -228,25 +208,6 @@ public class HotUpdateBootstrap : MonoBehaviour
         yield return req.SendWebRequest();
         if (req.result == UnityWebRequest.Result.Success)
             onComplete?.Invoke(req.downloadHandler.text);
-        else
-        {
-            Debug.LogWarning($"[HotUpdate] 下载失败: {url}, {req.error}");
-            onComplete?.Invoke(null);
-        }
-    }
-
-    /// <summary>下载字节数据</summary>
-    private IEnumerator DownloadBytes(string url, Action<byte[]> onComplete)
-    {
-        using var req = UnityEngine.Networking.UnityWebRequest.Get(url);
-        req.timeout = Mathf.CeilToInt(_timeoutSeconds > 0 ? _timeoutSeconds : 30);
-
-        yield return req.SendWebRequest();
-
-        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-        {
-            onComplete?.Invoke(req.downloadHandler.data);
-        }
         else
         {
             Debug.LogWarning($"[HotUpdate] 下载失败: {url}, {req.error}");
