@@ -11,7 +11,6 @@ public class HotUpdateDllCopier : EditorWindow
     private const string SourceDir = "HybridCLRData/HotUpdateDlls/WebGL";
     private const string TargetDir = "Assets/StreamingAssets/HotUpdateDlls";
 
-    [MenuItem("Tools/Copy HotUpdate DLLs for YooAsset")]
     public static void CopyDlls()
     {
         var projectRoot = Path.GetDirectoryName(Application.dataPath);
