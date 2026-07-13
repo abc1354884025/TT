@@ -22,7 +22,7 @@ public class MainMenuPanel : UIPanel
     {
         _vm = new MainMenuViewModel();
 
-        if (_titleText) _titleText.text = "背包乱斗";
+        if (_titleText) _titleText.text = "背包乱斗-------";
         if (_startButton) _unbind.Add(_startButton.BindClick(OnStart));
         if (_quitButton) _unbind.Add(_quitButton.BindClick(OnQuit));
 

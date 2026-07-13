@@ -208,6 +208,9 @@ public class HotUpdateBootstrap : MonoBehaviour
 
         var elapsed = Time.realtimeSinceStartup - startTime;
         Debug.Log($"[HotUpdate] ===== 框架就绪，耗时 {elapsed:F1}s =====");
+
+        // 通知 GameManager 可以开始了
+        ResourceManager.IsBootstrapDone = true;
     }
 
     #endregion

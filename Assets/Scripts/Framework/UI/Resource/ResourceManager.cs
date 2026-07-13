@@ -7,26 +7,24 @@ using UnityEngine;
 public static class ResourceManager
 {
     private static IResourceProvider _provider;
+    /// <summary>Bootstrap 完成标志（GameManager 在等这个）</summary>
+    public static bool IsBootstrapDone;
 
-    /// <summary>由 UIManager.SetResourceProvider 调用</summary>
     public static void SetProvider(IResourceProvider provider)
     {
         _provider = provider;
     }
 
-    /// <summary>加载 Sprite（图标等）</summary>
     public static Sprite LoadSprite(string path)
     {
         if (_provider != null)
             return _provider.LoadSprite(path);
-
-        // fallback
-        Debug.LogWarning($"[ResourceManager] Provider 未设置，fallback Resources.Load: {path}");
+        Debug.LogWarning($"[ResourceManager] Provider 未设置");
         return Resources.Load<Sprite>(path);
     }
 
-    /// <summary>YooAsset 是否已初始化完成（Provider 已设置且不是 ResourcesProvider）</summary>
-    public static bool IsYooAssetReady => _provider != null;
+    /// <summary>GameManager 等待 HotUpdateBootstrap 完成</summary>
+    public static bool IsYooAssetReady => IsBootstrapDone;
 
     /// <summary>当前 Provider</summary>
     public static IResourceProvider Provider => _provider;
