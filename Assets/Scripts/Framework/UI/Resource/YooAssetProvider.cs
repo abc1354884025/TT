@@ -87,7 +87,7 @@ public class YooAssetProvider : IResourceProvider
         if (package == null) { onLoaded?.Invoke(null); yield break; }
 
         // 尝试多种地址格式（AddressByFileName 兼容）
-        var handles = new AssetHandle[3];
+        var handles = new AssetHandle[4];
         handles[0] = package.LoadAssetAsync<GameObject>(path);
         var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
         if (fileName != path && !string.IsNullOrEmpty(fileName))
@@ -95,6 +95,9 @@ public class YooAssetProvider : IResourceProvider
         var fileWithExt = System.IO.Path.GetFileName(path);
         if (fileWithExt != fileName && !string.IsNullOrEmpty(fileWithExt))
             handles[2] = package.LoadAssetAsync<GameObject>(fileWithExt);
+        // AddressByFilePath 可能生成 Resources/UI/Panels/xxx 格式
+        if (!path.Contains("Resources/"))
+            handles[3] = package.LoadAssetAsync<GameObject>("Resources/" + path);
 
         // 等第一个完成，如果失败则等下一个
         AssetHandle handle = null;
