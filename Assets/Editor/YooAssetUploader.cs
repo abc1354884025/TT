@@ -331,7 +331,10 @@ public class YooAssetUploader : EditorWindow
         _statusText = "同步 BuiltinCatalog...";
         _logs.Clear();
 
-        // 1. 先同步 BuiltinCatalog 到 StreamingAssets
+        // 1. 复制热更 DLL
+        HotUpdateDllCopier.CopyDlls();
+
+        // 2. 同步 BuiltinCatalog 到 StreamingAssets
         SyncBuiltinCatalog();
 
         _statusText = "同步到 TOS...";
