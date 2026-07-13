@@ -339,7 +339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20af6aed70c3c4244b93b1f661478b53, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _devMode: 1
+  _devMode: 0
   _cdnBaseUrl: http://your-cdn.com/game/
   _versionManifest: version.json
   _hotUpdateDlls:

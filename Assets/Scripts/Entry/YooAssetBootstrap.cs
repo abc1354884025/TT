@@ -61,13 +61,10 @@ public class YooAssetBootstrap : MonoBehaviour
 
         if (initOp.Status != EOperationStatus.Succeeded)
         {
-            Debug.LogWarning($"[YooAsset] 本地初始化失败(不影响CDN): {initOp.Error}");
-            // WebPlayMode 下本地 catalog 缺失属正常，继续走 CDN
+            Debug.LogError($"[YooAsset] Package 初始化失败: {initOp.Error}，退回 Resources");
+            yield break;
         }
-        else
-        {
-            Debug.Log($"[YooAsset] Package 初始化完成, 模式: {actualMode}");
-        }
+        Debug.Log($"[YooAsset] Package 初始化完成, 模式: {actualMode}");
 
         // 4. 版本和清单（CDN 模式）
         if (actualMode == EPlayMode.HostPlayMode || actualMode == EPlayMode.WebPlayMode)

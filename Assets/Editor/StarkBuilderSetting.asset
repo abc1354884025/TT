@@ -18,7 +18,7 @@ MonoBehaviour:
   useByteAudioAPI: 0
   wasmMemorySize: 128
   isWebGL2: 1
-  needCompress: 1
+  needCompress: 0
   symbolMode: 1
   profiling: 0
   clearStreamingAssets: 0
@@ -54,7 +54,7 @@ MonoBehaviour:
   _appId: tt7ced0a50e288d9cd07
   version: 
   autoVersion: 0
-  _webglPackagePath: E:\TT\output\webgl_package-20260713_110217.zip
+  _webglPackagePath: E:\TT\output\webgl_package-20260713_111644.zip
   _orientation: 0
   _iOSPerformancePlus: 0
   _menuButtonStyle: 0
