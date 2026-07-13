@@ -328,8 +328,13 @@ public class YooAssetUploader : EditorWindow
     private void TosSync()
     {
         _isWorking = true;
-        _statusText = "同步中...";
+        _statusText = "同步 BuiltinCatalog...";
         _logs.Clear();
+
+        // 1. 先同步 BuiltinCatalog 到 StreamingAssets
+        SyncBuiltinCatalog();
+
+        _statusText = "同步到 TOS...";
 
         var sourceDir = new DirectoryInfo(_detectedVersionDir);
         var files = sourceDir.GetFiles("*", SearchOption.AllDirectories)
@@ -415,6 +420,48 @@ public class YooAssetUploader : EditorWindow
 
         _isWorking = false;
         AssetDatabase.Refresh();
+    }
+
+    #endregion
+
+    #region 内置清单同步
+
+    private void SyncBuiltinCatalog()
+    {
+        var dstDir = Path.Combine(Application.dataPath, "StreamingAssets/yoo/DefaultPackage");
+        Directory.CreateDirectory(dstDir);
+
+        var srcDir = _detectedVersionDir;
+        if (string.IsNullOrEmpty(srcDir) || !Directory.Exists(srcDir))
+        {
+            Log("⚠ 未检测到 YooAsset 构建产物，跳过 BuiltinCatalog 同步");
+            return;
+        }
+
+        foreach (var f in Directory.GetFiles(srcDir, "*.bytes"))
+        {
+            var dst = Path.Combine(dstDir, "BuiltinCatalog.bytes");
+            File.Copy(f, dst, true);
+            Log($"  BuiltinCatalog.bytes ← {Path.GetFileName(f)}");
+        }
+        foreach (var f in Directory.GetFiles(srcDir, "*.hash"))
+        {
+            var dst = Path.Combine(dstDir, "BuiltinCatalog.hash");
+            File.Copy(f, dst, true);
+        }
+        foreach (var f in Directory.GetFiles(srcDir, "*.version"))
+        {
+            var dst = Path.Combine(dstDir, "DefaultPackage.version");
+            File.Copy(f, dst, true);
+        }
+        foreach (var f in Directory.GetFiles(srcDir, "*.bundle"))
+        {
+            var dst = Path.Combine(dstDir, Path.GetFileName(f));
+            File.Copy(f, dst, true);
+        }
+
+        AssetDatabase.Refresh();
+        Log("✓ BuiltinCatalog 已同步到 StreamingAssets");
     }
 
     #endregion
