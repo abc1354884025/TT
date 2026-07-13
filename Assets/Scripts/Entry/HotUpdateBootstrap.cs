@@ -108,10 +108,13 @@ public class HotUpdateBootstrap : MonoBehaviour
             if (!YooAssets.TryGetPackage("DefaultPackage", out var package))
                 package = YooAssets.CreatePackage("DefaultPackage");
 
-            var options = new WebPlayModeOptions();
-            // 不用本地文件系统，纯 CDN——跳过 BuiltinCatalog 校验问题
-            options.WebNetworkFileSystemParameters =
-                FileSystemParameters.CreateDefaultWebNetworkFileSystemParameters(
+            // HostPlayMode: 本地 StreamingAssets BuiltinCatalog + bundle 为主，CDN 增量更新
+            // WebPlayMode 在 Douyin 小游戏中 HTTP 下载会被拦截，HostPlayMode 用本地文件兜底
+            var options = new HostPlayModeOptions();
+            options.BuiltinFileSystemParameters =
+                FileSystemParameters.CreateDefaultBuiltinFileSystemParameters();
+            options.CacheFileSystemParameters =
+                FileSystemParameters.CreateDefaultSandboxFileSystemParameters(
                     new CdnRemoteService(_cdnBaseUrl, resolvedVersion));
 
             var initOp = package.InitializePackageAsync(options);
