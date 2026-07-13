@@ -101,52 +101,8 @@ public class HotUpdateBootstrap : MonoBehaviour
                 Debug.LogWarning("[HotUpdate] 版本清单拉取失败，使用兜底版本");
             }
 
-            // --- 阶段 2: 下载并加载热更 DLL ---
-            Debug.Log("[HotUpdate] 阶段 2/4: 下载热更 DLL...");
-
-            foreach (var dllName in _hotUpdateDlls)
-            {
-                var url = $"{_cdnBaseUrl}{resolvedVersion}/{dllName}";
-                byte[] dllBytes = null;
-                yield return DownloadBytes(url, bytes => dllBytes = bytes);
-
-                if (dllBytes != null && dllBytes.Length > 0)
-                {
-                    try
-                    {
-                        // HybridCLR: 加载热更 DLL
-                        // 如果用 HybridCLR 的 RuntimeApi，替换下面这行：
-                        // hotUpdateAss = RuntimeApi.LoadAssembly(dllBytes);
-                        hotUpdateAss = Assembly.Load(dllBytes);
-                        Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError($"[HotUpdate] DLL 加载失败: {dllName}, {e.Message}");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[HotUpdate] DLL 下载失败: {url}");
-                }
-            }
-
-            if (hotUpdateAss != null)
-            {
-                ui.SetHotUpdateAssembly(hotUpdateAss);
-            }
-            else if (!_fallbackToResources)
-            {
-                Debug.LogError("[HotUpdate] 热更 DLL 全部加载失败且不允许退回！");
-                yield break;
-            }
-            else
-            {
-                Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
-            }
-
-            // --- 阶段 3: 初始化 YooAsset ---
-            Debug.Log("[HotUpdate] 阶段 3/4: 初始化 YooAsset...");
+            // --- 阶段 2: 初始化 YooAsset ---
+            Debug.Log("[HotUpdate] 阶段 2/4: 初始化 YooAsset...");
 
             YooAssets.Initialize();
             if (!YooAssets.TryGetPackage("DefaultPackage", out var package))
@@ -178,6 +134,38 @@ public class HotUpdateBootstrap : MonoBehaviour
                         var provider = new YooAssetProvider(this, "DefaultPackage");
                         ui.SetResourceProvider(provider);
                         Debug.Log($"[HotUpdate] YooAsset 就绪, 版本: {versionOp.PackageVersion}");
+
+                        // --- 阶段 3: 从 YooAsset 加载热更 DLL ---
+                        Debug.Log("[HotUpdate] 阶段 3/4: 加载热更 DLL...");
+
+                        foreach (var dllName in _hotUpdateDlls)
+                        {
+                            var dllPath = dllName.Replace(".dll", ""); // HotUpdate
+                            var handle = package.LoadAssetAsync<TextAsset>(dllPath);
+                            yield return handle;
+
+                            if (handle.Status == EOperationStatus.Succeeded)
+                            {
+                                var ta = handle.GetAssetObject<TextAsset>();
+                                if (ta != null && ta.bytes.Length > 0)
+                                {
+                                    try
+                                    {
+                                        hotUpdateAss = Assembly.Load(ta.bytes);
+                                        Debug.Log($"[HotUpdate] DLL 加载成功: {dllPath} ({ta.bytes.Length / 1024} KB)");
+                                        break;
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Debug.LogError($"[HotUpdate] DLL 加载失败: {dllPath}, {e.Message}");
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[HotUpdate] DLL 未找到: {dllPath}, {handle.Error}");
+                            }
+                        }
                     }
                     else
                         Debug.LogError($"[HotUpdate] 清单加载失败: {manifestOp.Error}");
@@ -187,6 +175,20 @@ public class HotUpdateBootstrap : MonoBehaviour
             }
             else
                 Debug.LogError($"[HotUpdate] YooAsset 初始化失败: {initOp.Error}，退回 Resources");
+
+            if (hotUpdateAss != null)
+            {
+                ui.SetHotUpdateAssembly(hotUpdateAss);
+            }
+            else if (!_fallbackToResources)
+            {
+                Debug.LogError("[HotUpdate] 热更 DLL 全部加载失败且不允许退回！");
+                yield break;
+            }
+            else
+            {
+                Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
+            }
         }
 
         // --- 阶段 4: 注入热更 Assembly ---

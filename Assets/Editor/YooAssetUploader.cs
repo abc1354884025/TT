@@ -343,11 +343,14 @@ public class YooAssetUploader : EditorWindow
         _statusText = "同步 BuiltinCatalog...";
         _logs.Clear();
 
-        // 1. 复制热更 DLL
+        // 1. 复制热更 DLL 到 StreamingAssets（YooAsset 用）
         HotUpdateDllCopier.CopyDlls();
 
         // 2. 同步 BuiltinCatalog 到 StreamingAssets
         SyncBuiltinCatalog();
+
+        // 3. 上传 HotUpdate.dll 到 CDN（和 YooAsset 包同一目录）
+        UploadHotUpdateDll();
 
         _statusText = "同步到 TOS...";
 
@@ -480,6 +483,42 @@ public class YooAssetUploader : EditorWindow
     }
 
     #endregion
+
+    private void UploadHotUpdateDll()
+    {
+        var projectRoot = Path.GetDirectoryName(Application.dataPath);
+        var dllPath = Path.Combine(projectRoot, "HybridCLRData/HotUpdateDlls/WebGL/HotUpdate.dll");
+        if (!File.Exists(dllPath))
+        {
+            Log("⚠ HotUpdate.dll 不存在，跳过上传（先编译热更 DLL）");
+            return;
+        }
+
+        var tmpPath = Path.Combine(Path.GetTempPath(), "HotUpdate.dll");
+        File.Copy(dllPath, tmpPath, true);
+
+        string tosPath = $"tos://{_tosBucket}/{_tosPrefix}/{_detectedVersion}/HotUpdate.dll";
+        var args = $"cp \"{tmpPath}\" \"{tosPath}\"";
+
+        try
+        {
+            var psi = new ProcessStartInfo(_tosUtilPath, args)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            var proc = Process.Start(psi);
+            proc.WaitForExit(30000);
+            File.Delete(tmpPath);
+            Log(proc.ExitCode == 0 ? "✓ HotUpdate.dll 已上传" : $"✗ HotUpdate.dll 上传失败, 退出码: {proc.ExitCode}");
+        }
+        catch (Exception e)
+        {
+            Log($"❌ HotUpdate.dll 上传异常: {e.Message}");
+        }
+    }
 
     #region 辅助
 
