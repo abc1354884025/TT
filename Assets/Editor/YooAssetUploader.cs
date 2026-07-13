@@ -494,11 +494,13 @@ public class YooAssetUploader : EditorWindow
             return;
         }
 
-        var tmpPath = Path.Combine(Path.GetTempPath(), "HotUpdate.dll");
-        File.Copy(dllPath, tmpPath, true);
+        // 拷到 YooAsset 构建目录，让它被 YooAsset 管理
+        var dllDst = Path.Combine(_detectedVersionDir, "HotUpdate.dll");
+        File.Copy(dllPath, dllDst, true);
+        Log($"✓ HotUpdate.dll → YooAsset 构建目录");
 
         string tosPath = $"tos://{_tosBucket}/{_tosPrefix}/{_detectedVersion}/HotUpdate.dll";
-        var args = $"cp \"{tmpPath}\" \"{tosPath}\"";
+        var args = $"cp \"{dllDst}\" \"{tosPath}\"";
 
         try
         {
@@ -511,8 +513,7 @@ public class YooAssetUploader : EditorWindow
             };
             var proc = Process.Start(psi);
             proc.WaitForExit(30000);
-            File.Delete(tmpPath);
-            Log(proc.ExitCode == 0 ? "✓ HotUpdate.dll 已上传" : $"✗ HotUpdate.dll 上传失败, 退出码: {proc.ExitCode}");
+            Log(proc.ExitCode == 0 ? "✓ HotUpdate.dll 已上传" : $"✗ HotUpdate.dll 上传失败");
         }
         catch (Exception e)
         {

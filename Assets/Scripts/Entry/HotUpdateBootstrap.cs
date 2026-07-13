@@ -134,40 +134,31 @@ public class HotUpdateBootstrap : MonoBehaviour
                         ui.SetResourceProvider(provider);
                         Debug.Log($"[HotUpdate] YooAsset 就绪, 版本: {versionOp.PackageVersion}");
 
-                        // --- 阶段 3: 从 YooAsset 加载热更 DLL ---
-                        Debug.Log("[HotUpdate] 阶段 3/4: 加载热更 DLL...");
+                        // --- 阶段 3: 下载热更 DLL ---
+                        Debug.Log("[HotUpdate] 阶段 3/4: 下载热更 DLL...");
 
                         foreach (var dllName in _hotUpdateDlls)
                         {
-                            var dllPath = dllName.Replace(".dll", ".bytes"); // HotUpdate.bytes
-                            var handle = package.LoadAssetAsync<TextAsset>(dllPath);
-                            if (handle.Status != EOperationStatus.Succeeded)
-                            {
-                                // 也可能是完整路径 HotUpdateDlls/HotUpdate.bytes
-                                handle = package.LoadAssetAsync<TextAsset>("HotUpdateDlls/" + dllPath);
-                            }
-                            yield return handle;
+                            var url = $"{_cdnBaseUrl}{resolvedVersion}/{dllName}";
+                            byte[] dllBytes = null;
+                            yield return DownloadBytes(url, bytes => dllBytes = bytes);
 
-                            if (handle.Status == EOperationStatus.Succeeded)
+                            if (dllBytes != null && dllBytes.Length > 0)
                             {
-                                var ta = handle.GetAssetObject<TextAsset>();
-                                if (ta != null && ta.bytes.Length > 0)
+                                try
                                 {
-                                    try
-                                    {
-                                        hotUpdateAss = Assembly.Load(ta.bytes);
-                                        Debug.Log($"[HotUpdate] DLL 加载成功: {dllPath} ({ta.bytes.Length / 1024} KB)");
-                                        break;
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        Debug.LogError($"[HotUpdate] DLL 加载失败: {dllPath}, {e.Message}");
-                                    }
+                                    hotUpdateAss = Assembly.Load(dllBytes);
+                                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
+                                    break;
+                                }
+                                catch (Exception e)
+                                {
+                                    Debug.LogError($"[HotUpdate] DLL 加载失败: {dllName}, {e.Message}");
                                 }
                             }
                             else
                             {
-                                Debug.LogWarning($"[HotUpdate] DLL 未找到: {dllPath}, {handle.Error}");
+                                Debug.LogWarning($"[HotUpdate] DLL 下载失败: {url}");
                             }
                         }
                     }
