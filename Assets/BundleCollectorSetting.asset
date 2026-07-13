@@ -46,7 +46,7 @@ MonoBehaviour:
       - CollectPath: Assets/Resources/UI/Panels
         CollectorGUID: 4f0ede2f2b25fa84d92ce0ada962d579
         CollectorType: 0
-        AddressRuleName: AddressByFilePath
+        AddressRuleName: AddressByFileName
         PackRuleName: PackDirectory
         FilterRuleName: CollectAll
         AssetTags: 
@@ -54,7 +54,7 @@ MonoBehaviour:
       - CollectPath: Assets/Resources/UI/Prefabs
         CollectorGUID: 93267e8f3243e2540b96de3d201d2cf6
         CollectorType: 0
-        AddressRuleName: AddressByFilePath
+        AddressRuleName: AddressByFileName
         PackRuleName: PackDirectory
         FilterRuleName: CollectAll
         AssetTags: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       - CollectPath: Assets/Resources/UI/Widgets
         CollectorGUID: 37e71679573f06543902a70ef4e773c1
         CollectorType: 0
-        AddressRuleName: AddressByFilePath
+        AddressRuleName: AddressByFileName
         PackRuleName: PackDirectory
         FilterRuleName: CollectAll
         AssetTags: 
@@ -75,7 +75,7 @@ MonoBehaviour:
       - CollectPath: Assets/Resources/Config
         CollectorGUID: 146ab4306ecb62f4dbc82dcb08182924
         CollectorType: 0
-        AddressRuleName: AddressByFilePath
+        AddressRuleName: AddressByFileName
         PackRuleName: PackDirectory
         FilterRuleName: CollectAll
         AssetTags: 
