@@ -164,23 +164,36 @@ public class HotUpdateBootstrap : MonoBehaviour
 
             if (initOp.Status == EOperationStatus.Succeeded)
             {
-                // 请求版本并加载清单
                 var versionOp = package.RequestPackageVersionAsync();
                 yield return versionOp;
 
                 if (versionOp.Status == EOperationStatus.Succeeded)
                 {
+                    Debug.Log($"[HotUpdate] 请求到版本: {versionOp.PackageVersion}");
                     var manifestOptions = new LoadPackageManifestOptions(versionOp.PackageVersion, timeout: 60);
-                    yield return package.LoadPackageManifestAsync(manifestOptions);
-                }
+                    var manifestOp = package.LoadPackageManifestAsync(manifestOptions);
+                    yield return manifestOp;
 
-                var yooProvider = new YooAssetProvider(this, "DefaultPackage");
-                ui.SetResourceProvider(yooProvider);
-                Debug.Log("[HotUpdate] YooAsset 初始化完成，Provider 已切换");
+                    if (manifestOp.Status == EOperationStatus.Succeeded)
+                    {
+                        Debug.Log($"[HotUpdate] 清单加载成功: {versionOp.PackageVersion}");
+                        var yooProvider = new YooAssetProvider(this, "DefaultPackage");
+                        ui.SetResourceProvider(yooProvider);
+                        Debug.Log("[HotUpdate] YooAsset Provider 已切换");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[HotUpdate] 清单加载失败: {manifestOp.Error}，退回 Resources");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"[HotUpdate] 版本请求失败: {versionOp.Error}，退回 Resources");
+                }
             }
             else
             {
-                Debug.LogWarning($"[HotUpdate] YooAsset 初始化失败: {initOp.Error}，退回 Resources");
+                Debug.LogError($"[HotUpdate] YooAsset 初始化失败: {initOp.Error}，退回 Resources");
             }
         }
 

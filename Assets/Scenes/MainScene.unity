@@ -392,7 +392,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _packageName: DefaultPackage
   _playMode: 1
-  _cdnBaseUrl: http://your-cdn.com/game/
+  _cdnBaseUrl: mytt.tos-cn-shanghai.volces.com
   _fallbackVersion: 1.0.0
   _versionManifest: version.json
   _editorSimulate: 1
