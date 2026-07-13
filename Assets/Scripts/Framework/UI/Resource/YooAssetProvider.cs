@@ -87,7 +87,9 @@ public class YooAssetProvider : IResourceProvider
         if (package == null) { onLoaded?.Invoke(null); yield break; }
 
         // 尝试多种地址格式（AddressByFileName 兼容）
-        var handles = new AssetHandle[4];
+        // AddressByFileName 保留原始扩展名（如 MainMenuPanel.prefab），
+        // 但 UI 路径约定不带扩展名（如 UI/Panels/MainMenuPanel），需要尝试补齐
+        var handles = new AssetHandle[5];
         handles[0] = package.LoadAssetAsync<GameObject>(path);
         var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
         if (fileName != path && !string.IsNullOrEmpty(fileName))
@@ -98,6 +100,10 @@ public class YooAssetProvider : IResourceProvider
         // AddressByFilePath 可能生成 Resources/UI/Panels/xxx 格式
         if (!path.Contains("Resources/"))
             handles[3] = package.LoadAssetAsync<GameObject>("Resources/" + path);
+        // 补齐 .prefab 扩展名（AddressByFileName 保留原始扩展名）
+        var fileNameWithPrefab = fileName + ".prefab";
+        if (fileNameWithPrefab != fileWithExt && !string.IsNullOrEmpty(fileName))
+            handles[4] = package.LoadAssetAsync<GameObject>(fileNameWithPrefab);
 
         // 等第一个完成，如果失败则等下一个
         AssetHandle handle = null;
