@@ -123,8 +123,19 @@ public class YooAssetProvider : IResourceProvider
         }
         else
         {
-            Debug.LogError($"[YooAssetProvider] 实例化失败: {path}");
-            onLoaded?.Invoke(null);
+            // 所有 YooAsset 格式都失败 → 退回 Resources.Load（本地/内置资源兜底）
+            Debug.LogWarning($"[YooAssetProvider] YooAsset 加载失败，退回 Resources: {path}");
+            var prefab = Resources.Load<GameObject>(path);
+            if (prefab != null)
+            {
+                var instance = UnityEngine.Object.Instantiate(prefab, parent);
+                onLoaded?.Invoke(instance);
+            }
+            else
+            {
+                Debug.LogError($"[YooAssetProvider] 实例化失败(含 Resources 兜底): {path}");
+                onLoaded?.Invoke(null);
+            }
         }
     }
 
