@@ -145,56 +145,8 @@ public class HotUpdateBootstrap : MonoBehaviour
                 Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
             }
 
-            // --- 阶段 3: 初始化 YooAsset ---
-            Debug.Log("[HotUpdate] 阶段 3/4: 初始化 YooAsset...");
-
-            YooAssets.Initialize();
-            if (!YooAssets.TryGetPackage("DefaultPackage", out var package))
-                package = YooAssets.CreatePackage("DefaultPackage");
-
-            var remoteService = new CdnRemoteService(_cdnBaseUrl, resolvedVersion);
-            var webOptions = new WebPlayModeOptions();
-            webOptions.WebServerFileSystemParameters =
-                FileSystemParameters.CreateDefaultWebServerFileSystemParameters();
-            webOptions.WebNetworkFileSystemParameters =
-                FileSystemParameters.CreateDefaultWebNetworkFileSystemParameters(remoteService);
-
-            var initOp = package.InitializePackageAsync(webOptions);
-            yield return initOp;
-
-            if (initOp.Status == EOperationStatus.Succeeded)
-            {
-                var versionOp = package.RequestPackageVersionAsync();
-                yield return versionOp;
-
-                if (versionOp.Status == EOperationStatus.Succeeded)
-                {
-                    Debug.Log($"[HotUpdate] 请求到版本: {versionOp.PackageVersion}");
-                    var manifestOptions = new LoadPackageManifestOptions(versionOp.PackageVersion, timeout: 60);
-                    var manifestOp = package.LoadPackageManifestAsync(manifestOptions);
-                    yield return manifestOp;
-
-                    if (manifestOp.Status == EOperationStatus.Succeeded)
-                    {
-                        Debug.Log($"[HotUpdate] 清单加载成功: {versionOp.PackageVersion}");
-                        var yooProvider = new YooAssetProvider(this, "DefaultPackage");
-                        ui.SetResourceProvider(yooProvider);
-                        Debug.Log("[HotUpdate] YooAsset Provider 已切换");
-                    }
-                    else
-                    {
-                        Debug.LogError($"[HotUpdate] 清单加载失败: {manifestOp.Error}，退回 Resources");
-                    }
-                }
-                else
-                {
-                    Debug.LogError($"[HotUpdate] 版本请求失败: {versionOp.Error}，退回 Resources");
-                }
-            }
-            else
-            {
-                Debug.LogError($"[HotUpdate] YooAsset 初始化失败: {initOp.Error}，退回 Resources");
-            }
+            // --- 阶段 3: YooAsset 由 YooAssetBootstrap 独立处理 ---
+            Debug.Log("[HotUpdate] 阶段 3/4: 跳过(YooAssetBootstrap 处理)");
         }
 
         // --- 阶段 4: 注入热更 Assembly ---
