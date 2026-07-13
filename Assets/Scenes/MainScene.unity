@@ -393,7 +393,7 @@ MonoBehaviour:
   _packageName: DefaultPackage
   _playMode: 1
   _cdnBaseUrl: mytt.tos-cn-shanghai.volces.com
-  _fallbackVersion: 1.0.0
+  _fallbackVersion: 0.0.1
   _versionManifest: version.json
   _editorSimulate: 1
 --- !u!1 &1702545226

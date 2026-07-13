@@ -32,7 +32,8 @@ public class YooAssetProvider : IResourceProvider
     public T Load<T>(string path) where T : UnityEngine.Object
     {
         var package = GetPackage();
-        if (package == null) { Debug.LogError($"[YooAssetProvider] Package 未就绪: {_packageName}"); return null; }
+        if (package == null || !package.CheckActiveManifest())
+        { Debug.LogError($"[YooAssetProvider] 同步加载失败，Package 未就绪: {_packageName}"); return null; }
 
         var handle = package.LoadAssetSync<T>(path);
         if (handle.Status == EOperationStatus.Succeeded)
@@ -53,7 +54,8 @@ public class YooAssetProvider : IResourceProvider
     private IEnumerator LoadAsyncRoutine<T>(string path, Action<T> onLoaded) where T : UnityEngine.Object
     {
         var package = GetPackage();
-        if (package == null) { onLoaded?.Invoke(null); yield break; }
+        if (package == null || !package.CheckActiveManifest())
+        { Debug.LogError($"[YooAssetProvider] 异步加载失败，Manifest 未激活: {path}"); onLoaded?.Invoke(null); yield break; }
 
         var handle = package.LoadAssetAsync<T>(path);
         yield return handle;
@@ -79,6 +81,13 @@ public class YooAssetProvider : IResourceProvider
     {
         var package = GetPackage();
         if (package == null) { onLoaded?.Invoke(null); yield break; }
+
+        if (!package.CheckActiveManifest())
+        {
+            Debug.LogError($"[YooAssetProvider] Manifest 未激活，请先 LoadPackageManifestAsync。path={path}");
+            onLoaded?.Invoke(null);
+            yield break;
+        }
 
         var handle = package.LoadAssetAsync<GameObject>(path);
         yield return handle;

@@ -66,8 +66,19 @@ public class YooAssetBootstrap : MonoBehaviour
         }
         Debug.Log($"[YooAsset] Package 初始化完成, 模式: {actualMode}");
 
-        // 4. 版本和清单（CDN 模式）
-        if (actualMode == EPlayMode.HostPlayMode || actualMode == EPlayMode.WebPlayMode)
+        // 4. 加载清单
+        if (actualMode == EPlayMode.EditorSimulateMode)
+        {
+            // EditorSimulateMode 需要显式加载清单
+            var simVersion = "Simulate";
+            var simManifestOp = package.LoadPackageManifestAsync(new LoadPackageManifestOptions(simVersion, timeout: 10));
+            yield return simManifestOp;
+            if (simManifestOp.Status != EOperationStatus.Succeeded)
+                Debug.LogWarning($"[YooAsset] 模拟模式清单加载失败: {simManifestOp.Error}");
+            else
+                Debug.Log("[YooAsset] 模拟模式清单已就绪");
+        }
+        else if (actualMode == EPlayMode.HostPlayMode || actualMode == EPlayMode.WebPlayMode)
         {
             yield return FetchVersionManifest();
 
