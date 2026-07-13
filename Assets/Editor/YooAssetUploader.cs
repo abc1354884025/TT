@@ -370,9 +370,9 @@ public class YooAssetUploader : EditorWindow
         try
         {
             // 构建 tosutil sync 命令
-            string tosPath = $"tos://{_tosBucket}/{_tosPrefix}/{_detectedVersion}/";
+            string tosPath = $"tos://{_tosBucket}/{_tosPrefix}/";
 
-            var args = $"cp \"{sourceDir.FullName}\\\\*\" \"{tosPath}\" -r " +
+            var args = $"cp \"{sourceDir.FullName}\" \"{tosPath}\" -r " +
                        $"--exclude \"*.meta\" --exclude \"*.report\" --exclude \"buildlogtep.json\"";
 
             Log($"$ tosutil {args}");
