@@ -96,10 +96,6 @@ public class YooAssetUploader : EditorWindow
 
         EditorGUILayout.Space(4);
 
-        // 自动检测版本
-        if (GUILayout.Button("扫描版本目录"))
-            DetectVersion();
-
         if (!string.IsNullOrEmpty(_detectedVersion))
         {
             EditorGUILayout.LabelField($"  版本: {_detectedVersion}",
@@ -134,8 +130,24 @@ public class YooAssetUploader : EditorWindow
 
         EditorGUILayout.Space(8);
 
+        EditorGUILayout.Space(4);
+        EditorGUILayout.LabelField("构建流程", EditorStyles.boldLabel);
+
+        GUI.enabled = !_isWorking;
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("1. 编译热更 DLL", GUILayout.Height(28)))
+        {
+            EditorApplication.ExecuteMenuItem("HybridCLR/Generate/All");
+            Log("✓ HybridCLR Generate/All 已执行");
+        }
+        if (GUILayout.Button("2. 扫描版本目录", GUILayout.Height(28)))
+            DetectVersion();
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space(6);
+
         GUI.enabled = !_isWorking && !string.IsNullOrEmpty(_detectedVersion);
-        if (GUILayout.Button("同步到 TOS", GUILayout.Height(36)))
+        if (GUILayout.Button("3. 同步到 TOS", GUILayout.Height(36)))
         {
             if (string.IsNullOrEmpty(_tosBucket))
             {
