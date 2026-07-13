@@ -26,14 +26,14 @@ MonoBehaviour:
     IgnoreRuleName: NormalIgnoreRule
     Groups:
     - GroupName: DLL
-      GroupDesc: 
-      AssetTags: 
+      GroupDesc:
+      AssetTags:
       ActiveRuleName: EnableGroup
       Collectors:
       - CollectPath: Assets/StreamingAssets/HotUpdateDlls/HotUpdate.bytes
         CollectorGUID: 591356104f489014fa894064a0844d06
         CollectorType: 1
-        AddressRuleName: AddressByFilePath
+        AddressRuleName: AddressByFileName
         PackRuleName: PackRawFile
         FilterRuleName: CollectAll
         AssetTags: 
