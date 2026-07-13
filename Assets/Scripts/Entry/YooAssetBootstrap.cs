@@ -66,6 +66,21 @@ public class YooAssetBootstrap : MonoBehaviour
         }
         Debug.Log($"[YooAsset] Package 初始化完成, 模式: {actualMode}");
 
+        // EditorSimulateMode 下等待 ActiveManifest 就绪
+        if (actualMode == EPlayMode.EditorSimulateMode)
+        {
+            float timeout = Time.realtimeSinceStartup + 5f;
+            while (!package.PackageValid && Time.realtimeSinceStartup < timeout)
+                yield return null;
+
+            if (!package.PackageValid)
+            {
+                Debug.LogError("[YooAsset] EditorSimulateMode Manifest 始终未激活，退回 Resources");
+                yield break;
+            }
+            Debug.Log("[YooAsset] EditorSimulateMode Manifest 已就绪");
+        }
+
         // 4. 版本和清单（仅 CDN 模式需要显式加载）
         if (actualMode == EPlayMode.HostPlayMode || actualMode == EPlayMode.WebPlayMode)
         {
