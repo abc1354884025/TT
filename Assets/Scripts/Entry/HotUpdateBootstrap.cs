@@ -134,31 +134,46 @@ public class HotUpdateBootstrap : MonoBehaviour
                         ui.SetResourceProvider(provider);
                         Debug.Log($"[HotUpdate] YooAsset 就绪, 版本: {versionOp.PackageVersion}");
 
-                        // --- 阶段 3: 下载热更 DLL ---
-                        Debug.Log("[HotUpdate] 阶段 3/4: 下载热更 DLL...");
+                        // --- 阶段 3: 从 YooAsset 加载热更 DLL ---
+                        Debug.Log("[HotUpdate] 阶段 3/4: 加载热更 DLL...");
 
                         foreach (var dllName in _hotUpdateDlls)
                         {
-                            var url = $"{_cdnBaseUrl}{resolvedVersion}/{dllName}";
                             byte[] dllBytes = null;
-                            yield return DownloadBytes(url, bytes => dllBytes = bytes);
+                            var dllPath = dllName.Replace(".dll", ".bytes"); // HotUpdate.bytes
 
-                            if (dllBytes != null && dllBytes.Length > 0)
+                            // 尝试多种地址格式（兼容 AddressByFileName）
+                            var handle = package.LoadAssetAsync<TextAsset>(dllPath);
+                            if (handle.Status == EOperationStatus.Failed)
+                                handle = package.LoadAssetAsync<TextAsset>(System.IO.Path.GetFileNameWithoutExtension(dllPath));
+                            if (handle.Status == EOperationStatus.Failed)
+                                handle = package.LoadAssetAsync<TextAsset>(dllName.Replace(".dll", "")); // HotUpdate
+                            yield return handle;
+
+                            if (handle.Status == EOperationStatus.Succeeded)
                             {
-                                try
+                                var ta = handle.GetAssetObject<TextAsset>();
+                                if (ta != null && ta.bytes.Length > 0)
                                 {
+                                    dllBytes = ta.bytes;
                                     hotUpdateAss = Assembly.Load(dllBytes);
                                     Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
                                     break;
                                 }
-                                catch (Exception e)
-                                {
-                                    Debug.LogError($"[HotUpdate] DLL 加载失败: {dllName}, {e.Message}");
-                                }
                             }
-                            else
+
+                            // YooAsset 找不到则退回直链下载
+                            if (dllBytes == null)
                             {
-                                Debug.LogWarning($"[HotUpdate] DLL 下载失败: {url}");
+                                var url = $"{_cdnBaseUrl}{resolvedVersion}/{dllName}";
+                                yield return DownloadBytes(url, bytes => dllBytes = bytes);
+                                if (dllBytes != null)
+                                {
+                                    hotUpdateAss = Assembly.Load(dllBytes);
+                                    Debug.Log($"[HotUpdate] DLL 直链加载成功: {dllName} ({dllBytes.Length / 1024} KB)");
+                                    break;
+                                }
+                                Debug.LogWarning($"[HotUpdate] DLL 加载失败: {dllName}");
                             }
                         }
                     }
