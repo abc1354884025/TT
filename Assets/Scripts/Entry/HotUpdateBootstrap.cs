@@ -109,8 +109,7 @@ public class HotUpdateBootstrap : MonoBehaviour
                 package = YooAssets.CreatePackage("DefaultPackage");
 
             var options = new WebPlayModeOptions();
-            options.WebServerFileSystemParameters =
-                FileSystemParameters.CreateDefaultWebServerFileSystemParameters();
+            // 不用本地文件系统，纯 CDN——跳过 BuiltinCatalog 校验问题
             options.WebNetworkFileSystemParameters =
                 FileSystemParameters.CreateDefaultWebNetworkFileSystemParameters(
                     new CdnRemoteService(_cdnBaseUrl, resolvedVersion));

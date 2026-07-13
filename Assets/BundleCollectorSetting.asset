@@ -30,11 +30,11 @@ MonoBehaviour:
       AssetTags: 
       ActiveRuleName: EnableGroup
       Collectors:
-      - CollectPath: Assets/StreamingAssets/HotUpdateDlls/HotUpdate.bytes
-        CollectorGUID: 591356104f489014fa894064a0844d06
+      - CollectPath: Assets/StreamingAssets/HotUpdateDlls
+        CollectorGUID: f20d40f144e056248b1be594ddb0a794
         CollectorType: 0
         AddressRuleName: AddressByFileName
-        PackRuleName: PackDirectory
+        PackRuleName: PackSeparately
         FilterRuleName: CollectAll
         AssetTags: 
         UserData: 
