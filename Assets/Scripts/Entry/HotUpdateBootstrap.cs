@@ -145,8 +145,48 @@ public class HotUpdateBootstrap : MonoBehaviour
                 Debug.LogWarning("[HotUpdate] 热更 DLL 不可用，退回本地 Resources 模式");
             }
 
-            // --- 阶段 3: YooAsset 由 YooAssetBootstrap 独立处理 ---
-            Debug.Log("[HotUpdate] 阶段 3/4: 跳过(YooAssetBootstrap 处理)");
+            // --- 阶段 3: 初始化 YooAsset ---
+            Debug.Log("[HotUpdate] 阶段 3/4: 初始化 YooAsset...");
+
+            YooAssets.Initialize();
+            if (!YooAssets.TryGetPackage("DefaultPackage", out var package))
+                package = YooAssets.CreatePackage("DefaultPackage");
+
+            var options = new WebPlayModeOptions();
+            options.WebServerFileSystemParameters =
+                FileSystemParameters.CreateDefaultWebServerFileSystemParameters();
+            options.WebNetworkFileSystemParameters =
+                FileSystemParameters.CreateDefaultWebNetworkFileSystemParameters(
+                    new CdnRemoteService(_cdnBaseUrl, resolvedVersion));
+
+            var initOp = package.InitializePackageAsync(options);
+            yield return initOp;
+
+            if (initOp.Status == EOperationStatus.Succeeded)
+            {
+                var versionOp = package.RequestPackageVersionAsync();
+                yield return versionOp;
+
+                if (versionOp.Status == EOperationStatus.Succeeded)
+                {
+                    var manifestOp = package.LoadPackageManifestAsync(
+                        new LoadPackageManifestOptions(versionOp.PackageVersion, timeout: 60));
+                    yield return manifestOp;
+
+                    if (manifestOp.Status == EOperationStatus.Succeeded)
+                    {
+                        var provider = new YooAssetProvider(this, "DefaultPackage");
+                        ui.SetResourceProvider(provider);
+                        Debug.Log($"[HotUpdate] YooAsset 就绪, 版本: {versionOp.PackageVersion}");
+                    }
+                    else
+                        Debug.LogError($"[HotUpdate] 清单加载失败: {manifestOp.Error}");
+                }
+                else
+                    Debug.LogError($"[HotUpdate] 版本请求失败: {versionOp.Error}");
+            }
+            else
+                Debug.LogError($"[HotUpdate] YooAsset 初始化失败: {initOp.Error}，退回 Resources");
         }
 
         // --- 阶段 4: 注入热更 Assembly ---
@@ -214,11 +254,24 @@ public class StartPanelData
     public bool IsHotUpdated;
 }
 
-/// <summary>CDN 版本清单。version.json 的格式：
-/// { "version": "2.0.0", "note": "修复了xxx" }</summary>
+/// <summary>CDN 版本清单</summary>
 [Serializable]
 public class VersionManifest
 {
     public string version;
     public string note;
+}
+
+/// <summary>CDN 远程服务实现</summary>
+public class CdnRemoteService : IRemoteService
+{
+    private readonly string _baseUrl;
+    private readonly string _version;
+    public CdnRemoteService(string baseUrl, string version)
+    {
+        _baseUrl = baseUrl.TrimEnd('/');
+        _version = version;
+    }
+    public IReadOnlyList<string> GetRemoteUrls(string fileName)
+        => new[] { $"{_baseUrl}/{_version}/{fileName}" };
 }
