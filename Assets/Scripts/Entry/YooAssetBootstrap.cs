@@ -159,11 +159,8 @@ public class YooAssetBootstrap : MonoBehaviour
             case EPlayMode.WebPlayMode:
             {
                 var options = new WebPlayModeOptions();
-                // 服务器文件系统：用空参数跳过本地内置清单检查
-                var webServerParams = new FileSystemParameters();
-                webServerParams.AddParameter("REMOTE_SERVICE",
-                    new CdnRemoteService(_cdnBaseUrl, _resolvedVersion));
-                options.WebServerFileSystemParameters = webServerParams;
+                options.WebServerFileSystemParameters =
+                    FileSystemParameters.CreateDefaultWebServerFileSystemParameters();
                 options.WebNetworkFileSystemParameters =
                     FileSystemParameters.CreateDefaultWebNetworkFileSystemParameters(
                         new CdnRemoteService(_cdnBaseUrl, _resolvedVersion));
