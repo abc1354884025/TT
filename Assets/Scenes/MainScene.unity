@@ -391,11 +391,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _packageName: DefaultPackage
-  _playMode: 1
+  _playMode: 4
   _cdnBaseUrl: mytt.tos-cn-shanghai.volces.com
   _fallbackVersion: 0.0.1
   _versionManifest: version.json
-  _editorSimulate: 1
+  _editorSimulate: 0
 --- !u!1 &1702545226
 GameObject:
   m_ObjectHideFlags: 0
