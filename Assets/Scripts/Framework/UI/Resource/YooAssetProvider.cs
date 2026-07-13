@@ -86,11 +86,26 @@ public class YooAssetProvider : IResourceProvider
         var package = GetPackage();
         if (package == null) { onLoaded?.Invoke(null); yield break; }
 
-        var handle = LoadWithFallback(package, path);
-        if (handle == null) { onLoaded?.Invoke(null); yield break; }
-        yield return handle;
+        // 尝试多种地址格式（AddressByFileName 兼容）
+        var handles = new AssetHandle[3];
+        handles[0] = package.LoadAssetAsync<GameObject>(path);
+        var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+        if (fileName != path && !string.IsNullOrEmpty(fileName))
+            handles[1] = package.LoadAssetAsync<GameObject>(fileName);
+        var fileWithExt = System.IO.Path.GetFileName(path);
+        if (fileWithExt != fileName && !string.IsNullOrEmpty(fileWithExt))
+            handles[2] = package.LoadAssetAsync<GameObject>(fileWithExt);
 
-        if (handle.Status == EOperationStatus.Succeeded)
+        // 等第一个完成，如果失败则等下一个
+        AssetHandle handle = null;
+        foreach (var h in handles)
+        {
+            if (h == null) continue;
+            yield return h;
+            if (h.Status == EOperationStatus.Succeeded) { handle = h; break; }
+        }
+
+        if (handle != null && handle.Status == EOperationStatus.Succeeded)
         {
             AddRef(path, handle);
             var instOp = handle.InstantiateAsync(new InstantiateOptions(true, parent, false));
@@ -99,36 +114,9 @@ public class YooAssetProvider : IResourceProvider
         }
         else
         {
-            Debug.LogError($"[YooAssetProvider] 实例化失败: {path}, {handle.Error}");
+            Debug.LogError($"[YooAssetProvider] 实例化失败: {path}");
             onLoaded?.Invoke(null);
         }
-    }
-
-    /// <summary>尝试多种地址格式加载，兼容 AddressByFileName</summary>
-    private AssetHandle LoadWithFallback(ResourcePackage package, string path)
-    {
-        // 1. 原路径
-        var h = package.LoadAssetAsync<GameObject>(path);
-        if (h.Status != EOperationStatus.Failed) return h;
-
-        // 2. 只要文件名（AddressByFileName 模式）
-        var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-        if (fileName != path && !string.IsNullOrEmpty(fileName))
-        {
-            h = package.LoadAssetAsync<GameObject>(fileName);
-            if (h.Status != EOperationStatus.Failed) return h;
-        }
-
-        // 3. 文件名.扩展名
-        var fileWithExt = System.IO.Path.GetFileName(path);
-        if (fileWithExt != fileName && !string.IsNullOrEmpty(fileWithExt))
-        {
-            h = package.LoadAssetAsync<GameObject>(fileWithExt);
-            if (h.Status != EOperationStatus.Failed) return h;
-        }
-
-        Debug.LogError($"[YooAssetProvider] 所有地址格式均失败: {path}");
-        return h;
     }
 
     public Sprite LoadSprite(string path)
