@@ -48,13 +48,7 @@ public class HotUpdateDllCopier : EditorWindow
 
         if (copied > 0)
         {
-            // 提示 YooAsset 下一步
-            var bytesPath = Path.Combine(dstDir, "HotUpdate.bytes");
-            if (File.Exists(bytesPath))
-            {
-                Debug.Log($"[DllCopier] YooAsset 收集器请将 {dstDir}/HotUpdate.bytes 标记为 raw asset");
-                EditorUtility.RevealInFinder(bytesPath);
-            }
+            Debug.Log($"[DllCopier] HotUpdate.bytes 已就绪");
         }
     }
 }

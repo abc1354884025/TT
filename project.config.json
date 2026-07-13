@@ -1,23 +1,23 @@
 {
-    "appid": "tt7ced0a50e288d9cd07",
-    "projectname": "TT",
-    "unity": {
-        "build": {
-            "webgl": "E:\\TT\\output\\webgl_package-20260713_115020.zip",
-            "native": {
-                "il2cpp": "",
-                "apk": "",
-                "fullApk": ""
-            },
-            "instantGame": ""
-        },
-        "publishType": "AndroidNativeOnly",
-        "starkSdkVersion": "Without StarkSDK",
-        "unityToolsVersion": null,
-        "unityEngineVersion": "2022.3.62f3c1",
-        "arch": "both"
+  "appid": "tt7ced0a50e288d9cd07",
+  "projectname": "TT",
+  "unity": {
+    "build": {
+      "webgl": "E:\\TT\\output\\webgl_package-20260713_144008.zip",
+      "native": {
+        "il2cpp": "",
+        "apk": "",
+        "fullApk": ""
+      },
+      "instantGame": ""
     },
-    "setting": {
-        "urlCheck": true
-    }
+    "publishType": "AndroidNativeOnly",
+    "starkSdkVersion": "Without StarkSDK",
+    "unityToolsVersion": null,
+    "unityEngineVersion": "2022.3.62f3c1",
+    "arch": "both"
+  },
+  "setting": {
+    "urlCheck": true
+  }
 }
