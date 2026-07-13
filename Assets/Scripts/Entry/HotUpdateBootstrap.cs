@@ -139,8 +139,13 @@ public class HotUpdateBootstrap : MonoBehaviour
 
                         foreach (var dllName in _hotUpdateDlls)
                         {
-                            var dllPath = dllName.Replace(".dll", ""); // HotUpdate
+                            var dllPath = dllName.Replace(".dll", ".bytes"); // HotUpdate.bytes
                             var handle = package.LoadAssetAsync<TextAsset>(dllPath);
+                            if (handle.Status != EOperationStatus.Succeeded)
+                            {
+                                // 也可能是完整路径 HotUpdateDlls/HotUpdate.bytes
+                                handle = package.LoadAssetAsync<TextAsset>("HotUpdateDlls/" + dllPath);
+                            }
                             yield return handle;
 
                             if (handle.Status == EOperationStatus.Succeeded)
