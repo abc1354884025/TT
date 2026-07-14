@@ -25,6 +25,16 @@ HybridCLRData/
 Bundles/
 Tools/
 
+# YooAsset / HybridCLR runtime artifacts (generated during build or TOS sync)
+/Assets/StreamingAssets/yoo/
+/Assets/StreamingAssets/yoo.meta
+/Assets/StreamingAssets/HotUpdateDlls/
+/Assets/StreamingAssets/HotUpdateDlls.meta
+/Assets/Res/HotDll/HotUpdate.bytes
+/Assets/Res/HotDll/HotUpdate.bytes.meta
+/Assets/Res.meta
+/Assets/Res/HotDll.meta
+
 # OS
 .DS_Store
 Thumbs.db

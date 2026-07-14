@@ -11,6 +11,7 @@ public class HotUpdateDllCopier : EditorWindow
     private const string SourceDir = "HybridCLRData/HotUpdateDlls/WebGL";
     private const string TargetDir = "Assets/Res/HotDll";
     private const string LegacyTargetDir = "Assets/StreamingAssets/HotUpdateDlls";
+    private const string HotUpdateGuid = "591356104f489014fa894064a0844d06";
 
     public static void CopyDlls()
     {
@@ -43,6 +44,7 @@ public class HotUpdateDllCopier : EditorWindow
 
             var dstPath = Path.Combine(dstDir, dllName.Replace(".dll", ".bytes"));
             Directory.CreateDirectory(dstDir);
+            EnsureMetaFile(dstPath);
             File.Copy(srcPath, dstPath, true);
             copied++;
             Debug.Log($"[DllCopier] {dllName} → {dstPath}");
@@ -80,5 +82,21 @@ public class HotUpdateDllCopier : EditorWindow
         var legacyMetaPath = legacyPath + ".meta";
         if (File.Exists(legacyMetaPath))
             File.Delete(legacyMetaPath);
+    }
+
+    private static void EnsureMetaFile(string assetPath)
+    {
+        var metaPath = assetPath + ".meta";
+        if (File.Exists(metaPath))
+            return;
+
+        File.WriteAllText(metaPath,
+            $"fileFormatVersion: 2\n" +
+            $"guid: {HotUpdateGuid}\n" +
+            "DefaultImporter:\n" +
+            "  externalObjects: {}\n" +
+            "  userData: \n" +
+            "  assetBundleName: \n" +
+            "  assetBundleVariant: \n");
     }
 }
