@@ -142,22 +142,24 @@ public class HotUpdateBootstrap : MonoBehaviour
 
                         foreach (var dllName in _hotUpdateDlls)
                         {
-                            // HotUpdate.bytes 已通过 BundleCollector DLL group (PackRawFile + AddressByFileName) 打入 YooAsset bundle
-                            var dllPath = dllName.Replace(".dll", ".bytes");
+                            var dllPath = "Assets/Res/HotDll/" + dllName.Replace(".dll", ".bytes");
                             var handle = package.LoadAssetAsync<TextAsset>(dllPath);
                             yield return handle;
 
                             if (handle.Status == EOperationStatus.Succeeded)
                             {
-                                var ta = handle.GetAssetObject<TextAsset>();
-                                if (ta != null && ta.bytes.Length > 0)
+                                var textAsset = handle.GetAssetObject<TextAsset>();
+                                if (textAsset != null && textAsset.bytes.Length > 0)
                                 {
-                                    hotUpdateAss = Assembly.Load(ta.bytes);
-                                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({ta.bytes.Length / 1024} KB)");
+                                    hotUpdateAss = Assembly.Load(textAsset.bytes);
+                                    Debug.Log($"[HotUpdate] DLL 加载成功: {dllName} ({textAsset.bytes.Length / 1024} KB)");
+                                    handle.Release();
                                     break;
                                 }
                             }
-                            Debug.LogWarning($"[HotUpdate] DLL 加载失败: {dllName}, {handle.Error}");
+                            var error = handle.Error;
+                            handle.Release();
+                            Debug.LogWarning($"[HotUpdate] DLL 加载失败: {dllName}, {error}");
                         }
                     }
                     else

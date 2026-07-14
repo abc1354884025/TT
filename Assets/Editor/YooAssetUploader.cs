@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -26,6 +27,7 @@ public class YooAssetUploader : EditorWindow
     private string _tosSecretKey = "";
     private string _tosPrefix = "game";
     private string _tosUtilPath = "";
+    private bool _embedBuiltinBundles;
 
     // 自动检测到的版本目录
     private string _detectedVersionDir = "";
@@ -62,6 +64,7 @@ public class YooAssetUploader : EditorWindow
         _tosPrefix = EditorPrefs.GetString("Yau_Prefix", "game");
         _tosUtilPath = EditorPrefs.GetString("Yau_TosUtil",
             Path.Combine(Application.dataPath, "../Tools/tosutil.exe"));
+        _embedBuiltinBundles = EditorPrefs.GetBool("Yau_EmbedBuiltinBundles", false);
     }
 
     private void OnDisable()
@@ -74,6 +77,7 @@ public class YooAssetUploader : EditorWindow
         EditorPrefs.SetString("Yau_Sk", _tosSecretKey);
         EditorPrefs.SetString("Yau_Prefix", _tosPrefix);
         EditorPrefs.SetString("Yau_TosUtil", _tosUtilPath);
+        EditorPrefs.SetBool("Yau_EmbedBuiltinBundles", _embedBuiltinBundles);
     }
 
     private void OnGUI()
@@ -118,11 +122,13 @@ public class YooAssetUploader : EditorWindow
 
         EditorGUILayout.Space(2);
         _tosUtilPath = EditorGUILayout.TextField("tosutil 路径", _tosUtilPath);
+        _embedBuiltinBundles = EditorGUILayout.ToggleLeft(
+            "内置全部 YooAsset Bundle（离线可启动，但首包更大）", _embedBuiltinBundles);
 
         // 配置 tosutil 按钮
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("配置 tosutil", GUILayout.Width(120)))
-            ConfigTosUtil();
+            EditorApplication.delayCall += ConfigTosUtil;
         EditorGUILayout.LabelField(
             "等效: tosutil config -e=http://... -re=... -i=<AK> -k=<SK>",
             EditorStyles.miniLabel);
@@ -137,11 +143,15 @@ public class YooAssetUploader : EditorWindow
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("1. 编译热更 DLL", GUILayout.Height(28)))
         {
-            EditorApplication.ExecuteMenuItem("HybridCLR/Generate/All");
-            Log("✓ HybridCLR Generate/All 已执行");
+            EditorApplication.delayCall += () =>
+            {
+                EditorApplication.ExecuteMenuItem("HybridCLR/Generate/All");
+                HotUpdateDllCopier.CopyDlls();
+                Log("✓ HybridCLR Generate/All 已执行，HotUpdate DLL 已复制");
+            };
         }
         if (GUILayout.Button("2. 扫描版本目录", GUILayout.Height(28)))
-            DetectVersion();
+            EditorApplication.delayCall += DetectVersion;
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space(6);
@@ -155,7 +165,7 @@ public class YooAssetUploader : EditorWindow
             }
             else
             {
-                TosSync();
+                EditorApplication.delayCall += TosSync;
             }
         }
         GUI.enabled = true;
@@ -343,14 +353,22 @@ public class YooAssetUploader : EditorWindow
         _statusText = "同步 BuiltinCatalog...";
         _logs.Clear();
 
-        // 1. 复制热更 DLL 到 StreamingAssets（YooAsset 用）
-        HotUpdateDllCopier.CopyDlls();
+        if (!ValidateHotUpdateInBuild())
+        {
+            _isWorking = false;
+            return;
+        }
 
-        // 2. 同步 BuiltinCatalog 到 StreamingAssets
+        // 资源包已经构建完成，此处不能再复制 DLL：新复制的文件不会自动写入已构建的 Bundle。
+        // 正确顺序是：编译/复制 DLL → YooAsset 构建 → 同步。ValidateHotUpdateInBuild 会强制验证此顺序。
+
+        // 1. 同步 BuiltinCatalog 到 StreamingAssets
         SyncBuiltinCatalog();
 
-        // 3. 上传 HotUpdate.dll 到 CDN（和 YooAsset 包同一目录）
-        UploadHotUpdateDll();
+        // 极简首包不需要保留构建 YooAsset 包时的源 DLL；运行时从 TOS 的
+        // YooAsset Bundle 加载 HotUpdate.bytes。下次构建资源包前会再次复制它。
+        if (!_embedBuiltinBundles)
+            HotUpdateDllCopier.RemoveDlls();
 
         _statusText = "同步到 TOS...";
 
@@ -456,22 +474,38 @@ public class YooAssetUploader : EditorWindow
             return;
         }
 
-        foreach (var f in Directory.GetFiles(srcDir, "*.bytes"))
+        if (!_embedBuiltinBundles)
         {
-            var dst = Path.Combine(dstDir, "BuiltinCatalog.bytes");
-            File.Copy(f, dst, true);
-            Log($"  BuiltinCatalog.bytes ← {Path.GetFileName(f)}");
+            // 空 Catalog 让 WebServerFileSystem 不声明任何本地 Bundle；后续资源
+            // 都由 WebNetworkFileSystem 从 TOS 获取，避免首包重复携带资源。
+            if (!CreateEmptyBuiltinCatalog(dstDir))
+                return;
+
+            foreach (var bundle in Directory.GetFiles(dstDir, "*.bundle"))
+                File.Delete(bundle);
+            Log("  极简首包：仅保留空 BuiltinCatalog，Bundle 从 TOS 加载");
+            AssetDatabase.Refresh();
+            return;
         }
-        foreach (var f in Directory.GetFiles(srcDir, "*.hash"))
+
+        // WebPlayMode 读取的是 BuiltinCatalog，不是 DefaultPackage_{version}.bytes。
+        // 后者是资源清单（文件头为 YOO），重命名后会导致运行时提示
+        // "Catalog file is invalid"。构建输出未包含 Catalog 时，在此生成它。
+        if (!CreateBuiltinCatalog(srcDir))
+            return;
+
+        var catalogPath = Path.Combine(srcDir, "BuiltinCatalog.bytes");
+        var versionPath = Path.Combine(srcDir, "DefaultPackage.version");
+        if (!File.Exists(catalogPath) || !File.Exists(versionPath))
         {
-            var dst = Path.Combine(dstDir, "BuiltinCatalog.hash");
-            File.Copy(f, dst, true);
+            Log("✗ BuiltinCatalog 或版本文件不存在，停止同步");
+            return;
         }
-        foreach (var f in Directory.GetFiles(srcDir, "*.version"))
-        {
-            var dst = Path.Combine(dstDir, "DefaultPackage.version");
-            File.Copy(f, dst, true);
-        }
+
+        File.Copy(catalogPath, Path.Combine(dstDir, "BuiltinCatalog.bytes"), true);
+        File.Copy(versionPath, Path.Combine(dstDir, "DefaultPackage.version"), true);
+        Log("  BuiltinCatalog.bytes ← 生成的内置资源目录");
+
         foreach (var f in Directory.GetFiles(srcDir, "*.bundle"))
         {
             var dst = Path.Combine(dstDir, Path.GetFileName(f));
@@ -482,44 +516,71 @@ public class YooAssetUploader : EditorWindow
         Log("✓ BuiltinCatalog 已同步到 StreamingAssets");
     }
 
-    #endregion
-
-    private void UploadHotUpdateDll()
+    private bool ValidateHotUpdateInBuild()
     {
-        var projectRoot = Path.GetDirectoryName(Application.dataPath);
-        var dllPath = Path.Combine(projectRoot, "HybridCLRData/HotUpdateDlls/WebGL/HotUpdate.dll");
-        if (!File.Exists(dllPath))
+        var reportPath = Directory.GetFiles(_detectedVersionDir, "*.report", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault();
+        const string hotUpdateAssetPath = "Assets/Res/HotDll/HotUpdate.bytes";
+        if (string.IsNullOrEmpty(reportPath) || !File.ReadAllText(reportPath).Contains(hotUpdateAssetPath))
         {
-            Log("⚠ HotUpdate.dll 不存在，跳过上传（先编译热更 DLL）");
-            return;
+            Log("✗ 当前 YooAsset 构建未包含 HotUpdate.bytes。请先编译并复制 DLL，再重新构建 AssetBundle。");
+            return false;
         }
+        return true;
+    }
 
-        // 拷到 YooAsset 构建目录，让它被 YooAsset 管理
-        var dllDst = Path.Combine(_detectedVersionDir, "HotUpdate.dll");
-        File.Copy(dllPath, dllDst, true);
-        Log($"✓ HotUpdate.dll → YooAsset 构建目录");
-
-        string tosPath = $"tos://{_tosBucket}/{_tosPrefix}/{_detectedVersion}/HotUpdate.dll";
-        var args = $"cp \"{dllDst}\" \"{tosPath}\"";
-
+    private bool CreateBuiltinCatalog(string packageDirectory)
+    {
         try
         {
-            var psi = new ProcessStartInfo(_tosUtilPath, args)
+            var helperType = typeof(YooAsset.YooAssets).Assembly
+                .GetType("YooAsset.BuiltinCatalogHelper");
+            var createMethod = helperType?.GetMethod("CreateFile",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (createMethod == null)
             {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-            var proc = Process.Start(psi);
-            proc.WaitForExit(30000);
-            Log(proc.ExitCode == 0 ? "✓ HotUpdate.dll 已上传" : $"✗ HotUpdate.dll 上传失败");
+                Log("✗ 未找到 YooAsset BuiltinCatalog 生成器");
+                return false;
+            }
+
+            var result = createMethod.Invoke(null, new object[] { null, _packageName, packageDirectory });
+            if (result is bool created && created)
+                return true;
+
+            Log("✗ YooAsset BuiltinCatalog 生成失败");
         }
         catch (Exception e)
         {
-            Log($"❌ HotUpdate.dll 上传异常: {e.Message}");
+            Log($"✗ 生成 BuiltinCatalog 异常: {e.InnerException?.Message ?? e.Message}");
+        }
+        return false;
+    }
+
+    private bool CreateEmptyBuiltinCatalog(string outputDirectory)
+    {
+        try
+        {
+            var helperType = typeof(YooAsset.YooAssets).Assembly
+                .GetType("YooAsset.BuiltinCatalogHelper");
+            var createMethod = helperType?.GetMethod("CreateEmptyFile",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (createMethod == null)
+            {
+                Log("✗ 未找到 YooAsset 空 BuiltinCatalog 生成器");
+                return false;
+            }
+
+            var result = createMethod.Invoke(null, new object[] { _packageName, string.Empty, outputDirectory });
+            return result is bool created && created;
+        }
+        catch (Exception e)
+        {
+            Log($"✗ 生成空 BuiltinCatalog 异常: {e.InnerException?.Message ?? e.Message}");
+            return false;
         }
     }
+
+    #endregion
 
     #region 辅助
 

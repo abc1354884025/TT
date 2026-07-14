@@ -18,7 +18,7 @@ MonoBehaviour:
   Packages:
   - PackageName: DefaultPackage
     PackageDesc: 
-    EnableAddressable: 0
+    EnableAddressable: 1
     SupportExtensionless: 1
     LocationToLower: 0
     IncludeAssetGUID: 0
@@ -30,11 +30,11 @@ MonoBehaviour:
       AssetTags:
       ActiveRuleName: EnableGroup
       Collectors:
-      - CollectPath: Assets/StreamingAssets/HotUpdateDlls/HotUpdate.bytes
+      - CollectPath: Assets/Res/HotDll/HotUpdate.bytes
         CollectorGUID: 591356104f489014fa894064a0844d06
-        CollectorType: 1
+        CollectorType: 0
         AddressRuleName: AddressByFileName
-        PackRuleName: PackRawFile
+        PackRuleName: PackSeparately
         FilterRuleName: CollectAll
         AssetTags: 
         UserData: 

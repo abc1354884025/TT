@@ -9,13 +9,18 @@ using UnityEngine;
 public class HotUpdateDllCopier : EditorWindow
 {
     private const string SourceDir = "HybridCLRData/HotUpdateDlls/WebGL";
-    private const string TargetDir = "Assets/StreamingAssets/HotUpdateDlls";
+    private const string TargetDir = "Assets/Res/HotDll";
+    private const string LegacyTargetDir = "Assets/StreamingAssets/HotUpdateDlls";
 
     public static void CopyDlls()
     {
         var projectRoot = Path.GetDirectoryName(Application.dataPath);
         var srcDir = Path.Combine(projectRoot, SourceDir);
         var dstDir = TargetDir;
+
+        // 旧路径会被 Unity 原样收进 StreamingAssets，与 YooAsset Bundle 重复。
+        // 在构建前清理它，只保留 Assets/Res/HotDll/HotUpdate.bytes 由 YooAsset 收集。
+        RemoveLegacyStreamingAsset();
 
         if (!Directory.Exists(srcDir))
         {
@@ -50,5 +55,30 @@ public class HotUpdateDllCopier : EditorWindow
         {
             Debug.Log($"[DllCopier] HotUpdate.bytes 已就绪");
         }
+    }
+
+    public static void RemoveDlls()
+    {
+        foreach (var dllName in new[] { "HotUpdate.bytes" })
+        {
+            var path = Path.Combine(TargetDir, dllName);
+            if (File.Exists(path))
+                File.Delete(path);
+
+        }
+
+        AssetDatabase.Refresh();
+        Debug.Log("[DllCopier] 已移除首包中的热更 DLL；运行时将从 YooAsset 网络资源加载。");
+    }
+
+    private static void RemoveLegacyStreamingAsset()
+    {
+        var legacyPath = Path.Combine(LegacyTargetDir, "HotUpdate.bytes");
+        if (File.Exists(legacyPath))
+            File.Delete(legacyPath);
+
+        var legacyMetaPath = legacyPath + ".meta";
+        if (File.Exists(legacyMetaPath))
+            File.Delete(legacyMetaPath);
     }
 }
