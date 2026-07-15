@@ -42,7 +42,8 @@ public class BattlePanel : UIPanel
 
         // 模拟战斗
         BattleResolver.SetSeed(UnityEngine.Random.Range(0, int.MaxValue));
-        var result = BattleResolver.Simulate("玩家", playerStats, enemy?.name ?? "敌人", enemyStats);
+        var result = BattleResolver.Simulate(
+            "玩家", playerStats, enemy?.name ?? "敌人", enemyStats, playerItems: prepareVM.BagGrid.Items);
 
         // 初始化 VM
         _vm = new BattleViewModel();
@@ -71,6 +72,8 @@ public class BattlePanel : UIPanel
             go.transform.SetParent(_logContainer, false);
             var widget = go.GetComponent<BattleLogEntryWidget>();
             widget.SetEntry(entry.ToString(), entry.AttackerName == "玩家", entry.IsCrit);
+            if (!string.IsNullOrEmpty(entry.VfxPath))
+                BattleEffectPlayer.Play(entry.VfxPath, entry.AttackerName == "玩家" ? _enemyHPBar.transform : _playerHPBar.transform);
         }));
 
         StartCoroutine(ShowContinueWhenDone());

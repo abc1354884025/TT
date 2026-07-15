@@ -15,11 +15,23 @@ public class ItemData
     /// <summary>图标路径（Resources 或 AB 中的 Sprite 路径）</summary>
     public string IconPath;
 
+    /// <summary>背包内的独立视觉 Prefab。为空时回退至 IconPath。</summary>
+    public string BackpackVisualPath;
+
+    /// <summary>装备自身 Animator 的状态名；Prefab 中未配置 Animator 时忽略。</summary>
+    public string BackpackAnimationState;
+
+    /// <summary>该装备可触发的技能 ID。与 EquipmentEffectDatabase 对应。</summary>
+    public string[] EffectIds;
+
     /// <summary>稀有度</summary>
     public ItemRarity Rarity;
 
     /// <summary>类型（武器/防具/饰品）</summary>
     public ItemType Type;
+
+    /// <summary>装备只能放在闲置格；背包物品只能覆盖禁用格并将其解锁。</summary>
+    public ItemPlacementType PlacementType;
 
     /// <summary>形状定义（JSON int[][] 反序列化）</summary>
     public int[][] ShapeMatrix;

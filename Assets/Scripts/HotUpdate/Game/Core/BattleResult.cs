@@ -12,6 +12,7 @@ public class BattleResult
     public int EnemyRemainingHP;
     public int TotalRounds;
     public List<BattleLogEntry> Log;
+    public List<BattleEvent> Events;
 
     public bool IsPlayerWin => Winner == WinnerType.Player;
     public bool IsDraw => Winner == WinnerType.Draw;

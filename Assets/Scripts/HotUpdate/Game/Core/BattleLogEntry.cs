@@ -9,10 +9,14 @@ public class BattleLogEntry
     public int Damage;
     public bool IsCrit;
     public int TargetRemainingHP;
+    public string SourceItemInstanceId;
+    public string EffectId;
+    public string VfxPath;
 
     public override string ToString()
     {
         string crit = IsCrit ? "【暴击！】" : "";
-        return $"Round {Round}: {AttackerName} 造成 {Damage} 伤害{crit}，剩余 HP: {TargetRemainingHP}";
+        string effect = string.IsNullOrEmpty(EffectId) ? "" : $"【{EffectId}】";
+        return $"Round {Round}: {AttackerName}{effect} 造成 {Damage} 伤害{crit}，剩余 HP: {TargetRemainingHP}";
     }
 }

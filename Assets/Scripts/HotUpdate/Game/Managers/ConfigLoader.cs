@@ -50,10 +50,12 @@ public static class ConfigLoader
     /// <summary>加载物品数据库（当前版本硬编码，后续热更可在此处从 CDN JSON 覆盖）</summary>
     public static void LoadItems(byte[] overrideBytes = null)
     {
-        // MVP 阶段 ItemDatabase 静态构造函数已写死数据
-        // 热更时可通过 overrideBytes 覆盖：
-        //   if (overrideBytes != null) ItemDatabase.ReloadFromJson(...)
-        Debug.Log($"[ConfigLoader] 物品已硬编码加载 ({ItemDatabase.Count} 个)");
+        string json = overrideBytes != null
+            ? System.Text.Encoding.UTF8.GetString(overrideBytes)
+            : Resources.Load<TextAsset>("Config/items")?.text;
+
+        if (!ItemDatabase.ReloadFromJson(json))
+            Debug.LogWarning($"[ConfigLoader] items.json 无效或为空，保留内置物品 ({ItemDatabase.Count} 个)");
     }
 
     /// <summary>加载敌人配置</summary>

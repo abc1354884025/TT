@@ -39,10 +39,13 @@ public class PrepareViewModel : ObservableObject
         ForwardProperty(nameof(Gold), Gold);
         ForwardProperty(nameof(Round), Round);
 
-        // 给 3 个初始物品
-        AddToInventory(ItemDatabase.GetByIndex(0)); // 铁剑
-        AddToInventory(ItemDatabase.GetByIndex(1)); // 木盾
-        AddToInventory(ItemDatabase.GetByIndex(2)); // 匕首
+        // 先给背包扩容片解锁格子，再给装备。
+        AddToInventory(ItemDatabase.GetById("backpack_patch"));
+
+        // 给 3 个初始装备
+        AddToInventory(ItemDatabase.GetById("rusty_sword"));
+        AddToInventory(ItemDatabase.GetById("wooden_shield"));
+        AddToInventory(ItemDatabase.GetById("dagger"));
 
         RefreshShop();
     }

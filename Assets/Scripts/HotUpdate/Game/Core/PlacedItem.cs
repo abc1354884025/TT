@@ -3,6 +3,8 @@
 /// </summary>
 public class PlacedItem
 {
+    /// <summary>同一种装备的不同实例必须具有不同 ID，供冷却、动画与战斗事件关联。</summary>
+    public string InstanceId { get; private set; }
     /// <summary>物品定义</summary>
     public ItemData ItemData { get; private set; }
 
@@ -19,9 +21,13 @@ public class PlacedItem
     /// <summary>在网格中的唯一索引（由 BagGrid 分配）</summary>
     public int ItemIndex { get; set; }
 
+    private readonly System.Collections.Generic.Dictionary<string, int> _effectReadyRound =
+        new System.Collections.Generic.Dictionary<string, int>();
+
     public PlacedItem(ItemData itemData, int gridX, int gridY, int rotation = 0)
     {
         ItemData = itemData;
+        InstanceId = System.Guid.NewGuid().ToString("N");
         GridX = gridX;
         GridY = gridY;
         ItemIndex = -1;
@@ -37,6 +43,17 @@ public class PlacedItem
 
     /// <summary>获取物品的战斗力</summary>
     public CombatStats GetStats() => ItemData.GetStats();
+
+    public bool IsEffectReady(string effectId, int round)
+    {
+        return !_effectReadyRound.TryGetValue(effectId, out var readyRound) || round >= readyRound;
+    }
+
+    public void StartEffectCooldown(string effectId, int currentRound, int cooldownRounds)
+    {
+        if (cooldownRounds > 0)
+            _effectReadyRound[effectId] = currentRound + cooldownRounds + 1;
+    }
 
     public override string ToString()
         => $"{ItemData.Name} @ ({GridX},{GridY}) R{Rotation}";

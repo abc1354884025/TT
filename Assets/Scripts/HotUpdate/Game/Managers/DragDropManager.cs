@@ -88,7 +88,7 @@ public class DragDropManager : MonoBehaviour
         if (cell.HasValue && DraggedItemData != null)
         {
             var shape = DraggedItemData.GetShape().Rotate(CurrentRotation);
-            bool valid = _vm.BagGrid.CanPlace(shape, cell.Value.x, cell.Value.y);
+            bool valid = _vm.BagGrid.CanPlace(DraggedItemData, shape, cell.Value.x, cell.Value.y);
             Ghost?.SetValid(valid);
             _targetGrid.ShowPlacementPreview(shape, cell.Value.x, cell.Value.y, valid);
         }
