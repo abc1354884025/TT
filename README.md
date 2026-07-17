@@ -148,3 +148,18 @@ Entry ──► UIFramework ──► YooAsset
 ---
 
 > 📝 仅供学习和参考使用 — 祝你背包满满，战无不胜！ (๑•̀ㅂ•́)و✧
+
+## YooAsset 热更新与缓存
+
+运行时先请求 TOS 上的 `version.json`，再通过 YooAsset 请求对应版本的包清单。YooAsset 会根据清单中的文件名、大小与哈希信息检查本地缓存：缓存文件存在且校验通过时直接复用，不会重复下载；只有新版本清单引用了新文件、文件缺失，或校验失败时才下载。
+
+热更 DLL 使用普通 YooAsset 资源，不走直链下载：`HotUpdate.dll` 经 HybridCLR 编译后复制为 `Assets/Res/HotDll/HotUpdate.bytes`，以 `TextAsset` 打入 Bundle，并由 `HotUpdateBootstrap` 通过 `LoadAssetAsync<TextAsset>` 加载后执行 `Assembly.Load`。
+
+发布顺序必须是：
+
+1. 在 Unity 执行 `HybridCLR/Generate/All`。
+2. 用 `YooAsset/AssetBundle Builder` 重新构建资源包。
+3. 检查构建报告包含 `Assets/Res/HotDll/HotUpdate.bytes`。
+4. 用 `Tools/YooAsset Uploader` 同步 TOS，再构建抖音包。
+
+`Bundles/`、`HybridCLRData/`、`Assets/StreamingAssets/yoo/` 与生成的 `HotUpdate.bytes` 均为本地构建产物，已由 `.gitignore` 排除，不能作为发布是否成功的依据。

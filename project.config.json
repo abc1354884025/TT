@@ -3,7 +3,7 @@
     "projectname": "TT",
     "unity": {
         "build": {
-            "webgl": "E:\\TT\\output\\webgl_package-20260713_170058.zip",
+            "webgl": "E:\\TT\\output\\webgl_package-20260714_111304.zip",
             "native": {
                 "il2cpp": "",
                 "apk": "",
@@ -18,6 +18,6 @@
         "arch": "both"
     },
     "setting": {
-        "urlCheck": true
+        "urlCheck": false
     }
 }
