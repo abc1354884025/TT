@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using TTSDK;
 using UnityEngine;
 
 /// <summary>
-/// 存档模块——封装 TT.Save / TT.LoadSaving，按游戏类型区分存档槽位。
+/// 存档模块——使用 PlayerPrefs 保存 JSON，不依赖特定平台 SDK。
 /// 用法：
 ///   SaveManager.Load();           // 游戏启动时加载
 ///   SaveManager.Save();           // 关键节点存档
@@ -13,7 +12,8 @@ using UnityEngine;
 /// </summary>
 public static class SaveManager
 {
-    private const string SaveKey = "backpack_brawl_save";
+    private const string SaveKey = "game_save_v1";
+    private const int CurrentVersion = 1;
 
     /// <summary>当前存档数据</summary>
     public static GameSaveData Data { get; private set; }
@@ -45,16 +45,24 @@ public static class SaveManager
     {
         try
         {
-            Data = TT.LoadSaving<GameSaveData>();
-            if (Data == null)
+            if (!PlayerPrefs.HasKey(SaveKey))
             {
                 Data = new GameSaveData();
                 Debug.Log("[SaveManager] 无存档，创建新存档");
+                return;
             }
-            else
+
+            var json = PlayerPrefs.GetString(SaveKey, string.Empty);
+            var envelope = JsonUtility.FromJson<SaveEnvelope>(json);
+            Data = envelope?.ToGameSaveData() ?? new GameSaveData();
+
+            if (envelope == null)
             {
-                Debug.Log($"[SaveManager] 加载存档成功，金币: {GetInt("gold", 0)}");
+                Debug.LogWarning("[SaveManager] 存档内容为空，使用默认存档");
+                return;
             }
+
+            Debug.Log($"[SaveManager] 加载存档成功，版本: {envelope.version}，金币: {GetInt("gold", 0)}");
         }
         catch (Exception e)
         {
@@ -70,8 +78,10 @@ public static class SaveManager
 
         try
         {
-            bool ok = TT.Save(Data);
-            Debug.Log($"[SaveManager] 保存{(ok ? "成功" : "失败")}");
+            var envelope = SaveEnvelope.From(Data);
+            PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(envelope));
+            PlayerPrefs.Save();
+            Debug.Log("[SaveManager] 保存成功");
         }
         catch (Exception e)
         {
@@ -84,7 +94,8 @@ public static class SaveManager
     {
         try
         {
-            TT.DeleteSaving<GameSaveData>();
+            PlayerPrefs.DeleteKey(SaveKey);
+            PlayerPrefs.Save();
             Data = new GameSaveData();
             Debug.Log("[SaveManager] 存档已删除");
         }
@@ -92,6 +103,81 @@ public static class SaveManager
         {
             Debug.LogWarning($"[SaveManager] 删除异常: {e.Message}");
         }
+    }
+
+    [Serializable]
+    private sealed class SaveEnvelope
+    {
+        public int version = CurrentVersion;
+        public List<IntEntry> ints = new List<IntEntry>();
+        public List<FloatEntry> floats = new List<FloatEntry>();
+        public List<StringEntry> strings = new List<StringEntry>();
+        public List<string> completedLevels = new List<string>();
+
+        public static SaveEnvelope From(GameSaveData data)
+        {
+            var envelope = new SaveEnvelope();
+
+            if (data.ints != null)
+                foreach (var pair in data.ints)
+                    envelope.ints.Add(new IntEntry { key = pair.Key, value = pair.Value });
+
+            if (data.floats != null)
+                foreach (var pair in data.floats)
+                    envelope.floats.Add(new FloatEntry { key = pair.Key, value = pair.Value });
+
+            if (data.strings != null)
+                foreach (var pair in data.strings)
+                    envelope.strings.Add(new StringEntry { key = pair.Key, value = pair.Value });
+
+            if (data.completedLevels != null)
+                envelope.completedLevels.AddRange(data.completedLevels);
+
+            return envelope;
+        }
+
+        public GameSaveData ToGameSaveData()
+        {
+            var data = new GameSaveData();
+
+            if (ints != null)
+                foreach (var entry in ints)
+                    if (!string.IsNullOrEmpty(entry.key)) data.ints[entry.key] = entry.value;
+
+            if (floats != null)
+                foreach (var entry in floats)
+                    if (!string.IsNullOrEmpty(entry.key)) data.floats[entry.key] = entry.value;
+
+            if (strings != null)
+                foreach (var entry in strings)
+                    if (!string.IsNullOrEmpty(entry.key)) data.strings[entry.key] = entry.value;
+
+            if (completedLevels != null)
+                data.completedLevels.AddRange(completedLevels);
+
+            return data;
+        }
+    }
+
+    [Serializable]
+    private sealed class IntEntry
+    {
+        public string key;
+        public int value;
+    }
+
+    [Serializable]
+    private sealed class FloatEntry
+    {
+        public string key;
+        public float value;
+    }
+
+    [Serializable]
+    private sealed class StringEntry
+    {
+        public string key;
+        public string value;
     }
 }
 

@@ -51,29 +51,8 @@ MonoBehaviour:
         FilterRuleName: CollectAll
         AssetTags: 
         UserData: 
-      - CollectPath: Assets/Resources/UI/Prefabs
-        CollectorGUID: 93267e8f3243e2540b96de3d201d2cf6
-        CollectorType: 0
-        AddressRuleName: AddressByFileName
-        PackRuleName: PackDirectory
-        FilterRuleName: CollectAll
-        AssetTags: 
-        UserData: 
       - CollectPath: Assets/Resources/UI/Widgets
         CollectorGUID: 37e71679573f06543902a70ef4e773c1
-        CollectorType: 0
-        AddressRuleName: AddressByFileName
-        PackRuleName: PackDirectory
-        FilterRuleName: CollectAll
-        AssetTags: 
-        UserData: 
-    - GroupName: Config
-      GroupDesc: 
-      AssetTags: 
-      ActiveRuleName: EnableGroup
-      Collectors:
-      - CollectPath: Assets/Resources/Config
-        CollectorGUID: 146ab4306ecb62f4dbc82dcb08182924
         CollectorType: 0
         AddressRuleName: AddressByFileName
         PackRuleName: PackDirectory

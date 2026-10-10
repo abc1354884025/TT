@@ -2,16 +2,14 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// 游戏管理器——全局状态机。
-/// 状态流转：MainMenu → Prepare → Battle → Reward → Prepare → ...
+/// 游戏管理器——保留启动流程，等待接入新玩法。
 /// </summary>
 public class GameManager : MonoBehaviour
 {
-    public enum State { Loading, MainMenu, Prepare, Battle, Reward }
+    public enum State { Loading, MainMenu }
 
     public static GameManager Instance { get; private set; }
     public State CurrentState { get; private set; } = State.Loading;
-    public int CurrentRound { get; set; } = 1;
 
     [SerializeField] private string _startPanel = "MainMenuPanel";
 
@@ -35,15 +33,9 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] YooAsset 已就绪");
 
         SaveManager.Load();
-        ConfigLoader.LoadAll();
         UIManager.Instance.SetHotUpdateAssembly(typeof(GameManager).Assembly);
 
         CurrentState = State.MainMenu;
         UIManager.Instance.Open(_startPanel);
     }
-
-    public void GoToPrepare() { CurrentState = State.Prepare; CurrentRound++; }
-    public void GoToBattle()   { CurrentState = State.Battle; }
-    public void GoToReward()   { CurrentState = State.Reward; }
-    public void GoToMainMenu() { CurrentState = State.MainMenu; CurrentRound = 1; }
 }

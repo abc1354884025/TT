@@ -5,8 +5,8 @@ using UnityEngine;
 /// </summary>
 public class MainMenuViewModel : ObservableObject
 {
-    public BindableProperty<string> Title = new BindableProperty<string>("背包乱斗");
-    public BindableProperty<string> Subtitle = new BindableProperty<string>("Backpack Brawl");
+    public BindableProperty<string> Title = new BindableProperty<string>("新游戏");
+    public BindableProperty<string> Subtitle = new BindableProperty<string>("新玩法开发中");
 
     public override void Dispose()
     {

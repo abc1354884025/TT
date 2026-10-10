@@ -2,8 +2,7 @@
     "name": "HotUpdate",
     "rootNamespace": "HotUpdate",
     "references": [
-        "UIFramework",
-        "TTLitJson"
+        "UIFramework"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
