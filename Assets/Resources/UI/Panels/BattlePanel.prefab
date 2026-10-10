@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 4647718561205073308}
   - component: {fileID: 2095076598901114159}
   - component: {fileID: 4998304454795454969}
+  - component: {fileID: 900000000000000001}
   m_Layer: 5
   m_Name: BattlePanel
   m_TagString: Untagged
@@ -186,6 +187,18 @@ MonoBehaviour:
   _continueButton: {fileID: 1269090347739374696}
   _logScroll: {fileID: 0}
   _logContainer: {fileID: 5930570556817874189}
+--- !u!114 &900000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100785395278245940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4f0f0b8b3214ad1a3ff11d7b6c48191, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!1 &1385743136705797183
 GameObject:
   m_ObjectHideFlags: 0

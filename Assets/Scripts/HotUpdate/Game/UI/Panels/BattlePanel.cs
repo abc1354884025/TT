@@ -35,6 +35,8 @@ public class BattlePanel : UIPanel
         var prepareVM = data as PrepareViewModel;
         if (prepareVM == null) { Debug.LogError("[BattlePanel] 没有 PrepareViewModel"); return; }
 
+        EnsureBattleLog();
+
         // 获取敌人
         var playerStats = prepareVM.BagGrid.GetTotalStats();
         var enemy = ConfigLoader.GetEnemyByDifficulty(prepareVM.Round.Value);
@@ -68,8 +70,9 @@ public class BattlePanel : UIPanel
         // 开始回放
         StartCoroutine(_vm.ReplayLog(this, 0.3f, entry =>
         {
-            var go = new GameObject("LogEntry", typeof(BattleLogEntryWidget), typeof(LayoutElement));
+            var go = new GameObject("LogEntry", typeof(RectTransform), typeof(BattleLogEntryWidget), typeof(LayoutElement));
             go.transform.SetParent(_logContainer, false);
+            go.GetComponent<LayoutElement>().preferredHeight = 62f;
             var widget = go.GetComponent<BattleLogEntryWidget>();
             widget.SetEntry(entry.ToString(), entry.AttackerName == "玩家", entry.IsCrit);
             if (!string.IsNullOrEmpty(entry.VfxPath))
@@ -77,6 +80,58 @@ public class BattlePanel : UIPanel
         }));
 
         StartCoroutine(ShowContinueWhenDone());
+    }
+
+    private void EnsureBattleLog()
+    {
+        if (_logScroll && _logContainer is RectTransform) return;
+
+        if (_logContainer) _logContainer.gameObject.SetActive(false);
+
+        var scrollObject = new GameObject("BattleLogScroll", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(ScrollRect));
+        scrollObject.transform.SetParent(transform, false);
+        var scrollRectTransform = scrollObject.GetComponent<RectTransform>();
+        scrollRectTransform.anchorMin = scrollRectTransform.anchorMax = scrollRectTransform.pivot = new Vector2(0.5f, 0.5f);
+        scrollRectTransform.anchoredPosition = new Vector2(0f, -135f);
+        scrollRectTransform.sizeDelta = new Vector2(910f, 1090f);
+        scrollObject.GetComponent<Image>().color = new Color(0.04f, 0.09f, 0.14f, 0.65f);
+
+        var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Mask));
+        viewport.transform.SetParent(scrollObject.transform, false);
+        var viewportRect = viewport.GetComponent<RectTransform>();
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.offsetMin = new Vector2(28f, 24f);
+        viewportRect.offsetMax = new Vector2(-28f, -24f);
+        viewport.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.01f);
+        viewport.GetComponent<Mask>().showMaskGraphic = false;
+
+        var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        content.transform.SetParent(viewport.transform, false);
+        var contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = Vector2.zero;
+
+        var layout = content.GetComponent<VerticalLayoutGroup>();
+        layout.spacing = 8f;
+        layout.padding = new RectOffset(14, 14, 14, 14);
+        layout.childControlHeight = true;
+        layout.childForceExpandHeight = false;
+
+        var fitter = content.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        _logScroll = scrollObject.GetComponent<ScrollRect>();
+        _logScroll.viewport = viewportRect;
+        _logScroll.content = contentRect;
+        _logScroll.horizontal = false;
+        _logScroll.vertical = true;
+        _logScroll.movementType = ScrollRect.MovementType.Clamped;
+        _logScroll.scrollSensitivity = 32f;
+        _logContainer = content.transform;
     }
 
     private IEnumerator ShowContinueWhenDone()

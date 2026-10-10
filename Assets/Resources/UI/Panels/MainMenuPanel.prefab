@@ -570,6 +570,7 @@ GameObject:
   - component: {fileID: 891886175958669929}
   - component: {fileID: 6772404628891988441}
   - component: {fileID: 6653918980253674431}
+  - component: {fileID: 900000000000000002}
   m_Layer: 5
   m_Name: MainMenuPanel
   m_TagString: Untagged
@@ -577,6 +578,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &900000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6555060117448321324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4f0f0b8b3214ad1a3ff11d7b6c48191, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!224 &8028518616549012706
 RectTransform:
   m_ObjectHideFlags: 0

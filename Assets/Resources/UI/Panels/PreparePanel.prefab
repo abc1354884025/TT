@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 4647718561205073308}
   - component: {fileID: 2095076598901114159}
   - component: {fileID: 1090429244428743296}
+  - component: {fileID: 900000000000000003}
   m_Layer: 5
   m_Name: PreparePanel
   m_TagString: Untagged
@@ -140,6 +141,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &900000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100785395278245940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4f0f0b8b3214ad1a3ff11d7b6c48191, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!224 &3643944444594249499
 RectTransform:
   m_ObjectHideFlags: 0

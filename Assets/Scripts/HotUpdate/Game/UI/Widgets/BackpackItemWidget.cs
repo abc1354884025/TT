@@ -138,9 +138,11 @@ public class BackpackItemWidget : MonoBehaviour, IBeginDragHandler, IDragHandler
         _fallbackIcon = new GameObject("FallbackIcon", typeof(Image));
         _fallbackIcon.transform.SetParent(_visualRoot, false);
         var iconImg = _fallbackIcon.GetComponent<Image>();
-        iconImg.sprite = ResourceManager.LoadSprite(iconPath);
         iconImg.raycastTarget = false;
         iconImg.preserveAspect = true;
+
+        // WebGL/YooAsset 下异步加载 Sprite，自动处理销毁和覆盖调用
+        iconImg.SetSpriteAsync(iconPath);
 
         var iconRt = _fallbackIcon.GetComponent<RectTransform>();
         iconRt.anchorMin = new Vector2(0.5f, 0.5f);

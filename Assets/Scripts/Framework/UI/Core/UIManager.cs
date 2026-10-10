@@ -55,7 +55,10 @@ public class UIManager : MonoSingleton<UIManager>
             {
                 var existing = GameObject.Find($"Canvas_{layer}");
                 if (existing != null)
+                {
                     _layerRoots[layer] = existing.GetComponent<RectTransform>();
+                    ConfigureCanvasScaler(existing.GetComponent<CanvasScaler>());
+                }
                 else
                 {
                     var go = new GameObject($"Canvas_{layer}", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -63,10 +66,21 @@ public class UIManager : MonoSingleton<UIManager>
                     var canvas = go.GetComponent<Canvas>();
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                     canvas.sortingOrder = (int)layer;
+                    ConfigureCanvasScaler(go.GetComponent<CanvasScaler>());
                     _layerRoots[layer] = go.GetComponent<RectTransform>();
                 }
             }
         }
+    }
+
+    private static void ConfigureCanvasScaler(CanvasScaler scaler)
+    {
+        if (!scaler) return;
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080f, 1920f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+        scaler.referencePixelsPerUnit = 100f;
     }
 
     #endregion
